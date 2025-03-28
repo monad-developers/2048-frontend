@@ -1,8 +1,8 @@
-import { useEffect, useState, useRef } from "react"
+"use client"
+
+import { useEffect, useState } from "react"
 import { Button } from "@/components/ui/button"
 import { Card } from "@/components/ui/card"
-
-import "./App.css";
 
 type Direction = "up" | "down" | "left" | "right"
 type Tile = {
@@ -25,15 +25,10 @@ export default function Game2048() {
   })
   const [gameOver, setGameOver] = useState<boolean>(false)
   const [isAnimating, setIsAnimating] = useState<boolean>(false)
-  const isMounted = useRef(true)
 
   // Initialize the game
   useEffect(() => {
     initializeGame()
-
-    return () => {
-      isMounted.current = false
-    }
   }, [])
 
   // Handle keyboard events
@@ -217,6 +212,7 @@ export default function Game2048() {
       })
 
       // If the board changed, add a new random tile
+      console.log("Moved: ", moved);
       if (moved) {
         setIsAnimating(true)
 
@@ -225,27 +221,25 @@ export default function Game2048() {
 
         // Add a new tile after the animation
         setTimeout(() => {
-          if (isMounted.current) {
-            try {
-              // Create a new copy to avoid mutation issues
-              const updatedBoardState = {
-                tiles: [...newBoardState.tiles],
-                score: newBoardState.score,
-              }
-
-              addRandomTile(updatedBoardState)
-              setBoardState(updatedBoardState)
-
-              // Check if the game is over
-              if (checkGameOver(updatedBoardState)) {
-                setGameOver(true)
-              }
-
-              setIsAnimating(false)
-            } catch (error) {
-              console.error("Error updating board state:", error)
-              setIsAnimating(false)
+          try {
+            // Create a new copy to avoid mutation issues
+            const updatedBoardState = {
+              tiles: [...newBoardState.tiles],
+              score: newBoardState.score,
             }
+
+            addRandomTile(updatedBoardState)
+            setBoardState(updatedBoardState)
+
+            // Check if the game is over
+            if (checkGameOver(updatedBoardState)) {
+              setGameOver(true)
+            }
+
+            setIsAnimating(false)
+          } catch (error) {
+            console.error("Error updating board state:", error)
+            setIsAnimating(false)
           }
         }, 150) // Wait for the movement animation to complete
       }
@@ -376,7 +370,7 @@ export default function Game2048() {
   }
 
   return (
-    <div className="flex flex-col items-center justify-center p-4 bg-gray-100">
+    <div className="flex flex-col items-center justify-center min-h-screen p-4 bg-gray-100">
       <h1 className="mb-4 text-4xl font-bold text-gray-800">2048</h1>
 
       <div className="flex items-center justify-between w-full max-w-md mb-4">
@@ -435,6 +429,19 @@ export default function Game2048() {
         <p className="mb-2">Use arrow keys to move the tiles.</p>
         <p>Join the numbers and get to the 2048 tile!</p>
       </div>
+
+      <style jsx={"true"} global={"true"}>{`
+        @keyframes appear {
+          0% { transform: scale(0.5); opacity: 0; }
+          100% { transform: scale(1); opacity: 1; }
+        }
+        
+        @keyframes merge {
+          0% { transform: scale(1); }
+          50% { transform: scale(1.2); }
+          100% { transform: scale(1); }
+        }
+      `}</style>
     </div>
   )
 }
