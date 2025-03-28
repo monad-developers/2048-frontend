@@ -3,6 +3,12 @@
 import { useEffect, useState } from "react"
 import { Button } from "@/components/ui/button"
 import { Card } from "@/components/ui/card"
+import { FunPurpleButton } from "./components/FunPurpleButton"
+import { LogOutIcon } from "lucide-react"
+
+import { createThirdwebClient } from "thirdweb";
+import { useActiveAccount, useConnect } from "thirdweb/react";
+import { inAppWallet, hasStoredPasskey } from "thirdweb/wallets/in-app";
 
 type Direction = "up" | "down" | "left" | "right"
 type Tile = {
@@ -19,6 +25,50 @@ type BoardState = {
 }
 
 export default function Game2048() {
+
+  // =============================================================//
+  //                            WEB3 LOGIC                        //
+  // =============================================================//
+
+  const client = createThirdwebClient({ clientId: import.meta.env.VITE_THIRDWEB_CLIENT_ID });
+
+  const { connect } = useConnect()
+  const account = useActiveAccount();
+  
+  const [loginLoading, setLoginLoading] = useState(false);
+
+  const handleLogin = async () => {
+    setLoginLoading(true);
+
+    try {
+      await connect(async () => {
+        const wallet = inAppWallet({
+          auth: {
+            options: ["passkey"],
+          },
+        });
+        const hasPasskey = await hasStoredPasskey(client);
+        await wallet.connect({
+          client,
+          strategy: "passkey",
+          type: hasPasskey ? "sign-in" : "sign-up",
+        });
+        return wallet;
+      });
+
+      initializeGame();
+      setLoginLoading(false);
+      
+    } catch(err) {
+      console.log("Problem logging in: ", err);
+      setLoginLoading(false);
+    }
+  };
+
+  // =============================================================//
+  //                       UI GAME LOGIC                          //
+  // =============================================================//
+
   const [boardState, setBoardState] = useState<BoardState>({
     tiles: [],
     score: 0,
@@ -34,6 +84,9 @@ export default function Game2048() {
   // Handle keyboard events
   useEffect(() => {
     const handleKeyDown = (event: KeyboardEvent) => {
+      // Must sign in.
+      if(!account) return;
+
       if (gameOver || isAnimating) return
 
       switch (event.key) {
@@ -212,7 +265,6 @@ export default function Game2048() {
       })
 
       // If the board changed, add a new random tile
-      console.log("Moved: ", moved);
       if (moved) {
         setIsAnimating(true)
 
@@ -338,15 +390,15 @@ export default function Game2048() {
       case 64:
         return "bg-purple-600 text-white"
       case 128:
-        return "bg-purple-300 text-white"
+        return "bg-amber-300 text-gray-800"
       case 256:
-        return "bg-purple-400 text-white"
+        return "bg-amber-400 text-white"
       case 512:
-        return "bg-purple-500 text-white"
+        return "bg-amber-500 text-white"
       case 1024:
-        return "bg-purple-600 text-white"
+        return "bg-amber-600 text-white"
       case 2048:
-        return "bg-purple-700 text-white"
+        return "bg-amber-700 text-white"
       default:
         return "bg-purple-800 text-white"
     }
@@ -369,17 +421,70 @@ export default function Game2048() {
     }
   }
 
+  const [displayScore, setDisplayScore] = useState(0);
+
+  useEffect(() => {
+    const targetScore = boardState.score;
+    if (displayScore !== targetScore) {
+      const duration = 150; // Total animation duration in ms
+      const startTime = Date.now();
+      const startScore = displayScore;
+  
+      const animate = () => {
+        const currentTime = Date.now();
+        const elapsed = currentTime - startTime;
+        
+        if (elapsed < duration) {
+          const progress = elapsed / duration;
+          const nextScore = Math.round(startScore + (targetScore - startScore) * progress);
+          setDisplayScore(nextScore);
+          requestAnimationFrame(animate);
+        } else {
+          setDisplayScore(targetScore);
+        }
+      };
+  
+      requestAnimationFrame(animate);
+    }
+  }, [boardState.score, displayScore]);
+
   return (
     <div className="flex flex-col items-center justify-center min-h-screen p-4 bg-gray-100">
-      <h1 className="mb-4 text-4xl font-bold text-gray-800">2048</h1>
+      <h1
+      className="mb-8 text-6xl font-extrabold text-yellow-400 drop-shadow-[4px_4px_0px_rgba(255,0,0,1)] md:drop-shadow-[6px_6px_0px_rgba(255,0,0,1)] uppercase tracking-wider transform rotate-[-2deg]"
+      >
+        2048
+      </h1>
 
       <div className="flex items-center justify-between w-full max-w-md mb-4">
-        <Card className="p-4 text-center">
-          <h2 className="text-sm font-semibold text-gray-500">SCORE</h2>
-          <p className="text-2xl font-bold">{boardState.score}</p>
+
+        <Card className="p-4 text-center bg-purple-600 font-bold shadow-[0_8px_0_rgb(107,33,168)] uppercase tracking-widest">
+          <h2 className="text-sm font-bold text-white">SCORE</h2>
+          <p className="text-4xl font-extrabold text-yellow-400 retro-number">{displayScore}</p>
+          <style jsx="true">{`
+            @keyframes flicker {
+              0% { opacity: 1; }
+              50% { opacity: 0.8; }
+              100% { opacity: 1; }
+            }
+            .retro-number {
+              font-family: 'Press Start 2P', cursive;
+              animation: flicker 1s infinite alternate;
+            }
+          `}</style>
         </Card>
 
-        <Button className="border" onClick={initializeGame}>New Game</Button>
+        {
+          !account 
+            ? <FunPurpleButton text="Sign-in to play" loadingText="Creating player" isLoading={loginLoading} onClick={handleLogin} /> 
+            : <div className="flex flex-col items-center gap-4">
+                <FunPurpleButton text="New Game" loadingText="" onClick={initializeGame} />
+                <p><span className="font-bold">Player</span>: {account.address.slice(0,4) + '...' + account.address.slice(-2)}</p>
+              </div>
+        }
+        
+        
+        
       </div>
 
       <div className="relative bg-gray-300 rounded-lg p-2 w-full max-w-md aspect-square">
@@ -419,7 +524,7 @@ export default function Game2048() {
             <div className="p-6 bg-white rounded-lg text-center">
               <h2 className="text-2xl font-bold mb-4">Game Over!</h2>
               <p className="mb-4">Your score: {boardState.score}</p>
-              <Button onClick={initializeGame}>Play Again</Button>
+              <Button className="border bg-purple-200" onClick={initializeGame}>Play Again</Button>
             </div>
           </div>
         )}
