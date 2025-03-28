@@ -326,29 +326,29 @@ export default function Game2048() {
   const getTileColor = (value: number) => {
     switch (value) {
       case 2:
-        return "bg-amber-100 text-gray-800"
+        return "bg-purple-100 text-gray-800"
       case 4:
-        return "bg-amber-200 text-gray-800"
+        return "bg-purple-200 text-gray-800"
       case 8:
-        return "bg-orange-300 text-white"
+        return "bg-purple-300 text-gray-800"
       case 16:
-        return "bg-orange-400 text-white"
+        return "bg-purple-400 text-white"
       case 32:
-        return "bg-orange-500 text-white"
+        return "bg-purple-500 text-white"
       case 64:
-        return "bg-orange-600 text-white"
+        return "bg-purple-600 text-white"
       case 128:
-        return "bg-yellow-300 text-white"
+        return "bg-purple-300 text-white"
       case 256:
-        return "bg-yellow-400 text-white"
+        return "bg-purple-400 text-white"
       case 512:
-        return "bg-yellow-500 text-white"
+        return "bg-purple-500 text-white"
       case 1024:
-        return "bg-yellow-600 text-white"
+        return "bg-purple-600 text-white"
       case 2048:
-        return "bg-yellow-700 text-white"
+        return "bg-purple-700 text-white"
       default:
-        return "bg-gray-800 text-white"
+        return "bg-purple-800 text-white"
     }
   }
 
@@ -379,7 +379,7 @@ export default function Game2048() {
           <p className="text-2xl font-bold">{boardState.score}</p>
         </Card>
 
-        <Button onClick={initializeGame}>New Game</Button>
+        <Button className="border" onClick={initializeGame}>New Game</Button>
       </div>
 
       <div className="relative bg-gray-300 rounded-lg p-2 w-full max-w-md aspect-square">
