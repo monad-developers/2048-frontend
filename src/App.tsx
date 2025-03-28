@@ -4,7 +4,6 @@ import { useEffect, useState } from "react"
 import { Button } from "@/components/ui/button"
 import { Card } from "@/components/ui/card"
 import { FunPurpleButton } from "./components/FunPurpleButton"
-import { LogOutIcon } from "lucide-react"
 
 import { createThirdwebClient } from "thirdweb";
 import { useActiveAccount, useConnect } from "thirdweb/react";
