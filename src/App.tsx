@@ -75,11 +75,6 @@ export default function Game2048() {
   const [gameOver, setGameOver] = useState<boolean>(false)
   const [isAnimating, setIsAnimating] = useState<boolean>(false)
 
-  // Initialize the game
-  useEffect(() => {
-    initializeGame()
-  }, [])
-
   // Handle keyboard events
   useEffect(() => {
     const handleKeyDown = (event: KeyboardEvent) => {
