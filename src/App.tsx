@@ -1,12 +1,14 @@
-"use client"
-
+// Hooks
 import { useEffect, useState } from "react"
-import { Button } from "@/components/ui/button"
+import { useActiveAccount, useConnect } from "thirdweb/react";
+
+// UI
 import { Card } from "@/components/ui/card"
+import { Button } from "@/components/ui/button"
 import { FunPurpleButton } from "./components/FunPurpleButton"
 
-import { createThirdwebClient } from "thirdweb";
-import { useActiveAccount, useConnect } from "thirdweb/react";
+// Utils
+import { client } from "./utils/client"
 import { inAppWallet, hasStoredPasskey } from "thirdweb/wallets/in-app";
 
 type Direction = "up" | "down" | "left" | "right"
@@ -28,8 +30,6 @@ export default function Game2048() {
   // =============================================================//
   //                            WEB3 LOGIC                        //
   // =============================================================//
-
-  const client = createThirdwebClient({ clientId: import.meta.env.VITE_THIRDWEB_CLIENT_ID });
 
   const { connect } = useConnect()
   const account = useActiveAccount();
