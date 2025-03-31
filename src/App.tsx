@@ -9,7 +9,10 @@ import { FunPurpleButton } from "./components/FunPurpleButton"
 
 // Utils
 import { client } from "./utils/client"
+import { gameContract } from "./utils/contract";
 import { inAppWallet, hasStoredPasskey } from "thirdweb/wallets/in-app";
+import { getAddress, keccak256, prepareContractCall, readContract, sendAndConfirmTransaction } from "thirdweb";
+import { encodePacked } from "thirdweb/utils";
 
 type Direction = "up" | "down" | "left" | "right"
 type Tile = {
@@ -28,7 +31,7 @@ type BoardState = {
 export default function Game2048() {
 
   // =============================================================//
-  //                            WEB3 LOGIC                        //
+  //                            SIGN-IN                           //
   // =============================================================//
 
   const { connect } = useConnect()
@@ -55,7 +58,6 @@ export default function Game2048() {
         return wallet;
       });
 
-      initializeGame();
       setLoginLoading(false);
       
     } catch(err) {
@@ -65,13 +67,96 @@ export default function Game2048() {
   };
 
   // =============================================================//
-  //                       UI GAME LOGIC                          //
+  //                          NEW GAME                            //
   // =============================================================//
 
   const [boardState, setBoardState] = useState<BoardState>({
     tiles: [],
     score: 0,
   })
+  const [sessionId, setSessionId] = useState<string>("");
+  const [gameLoading, setGameLoading] = useState<boolean>(false);
+  
+  // Initialize the game with two random tiles
+  const initializeGame = async () => {
+
+    setGameLoading(true);
+    
+    try {
+      if(!account) {
+        alert("Please sign-in to play game.");
+        throw new Error("Cannot initialize game without a signed-in account.")
+      }
+
+      // Make transaction to start a new game.
+      const transaction = prepareContractCall({
+        contract: gameContract,
+        method: "startGame"
+      });
+
+      const result = await sendAndConfirmTransaction({
+        account,
+        transaction
+      })
+
+      // Log
+      console.log("Start game transaction: ", result.transactionHash);
+
+      // Calculate session ID based on block number and player address.
+      const expectedSessionId = keccak256(encodePacked(["address", "uint256"], [account.address, result.blockNumber]));
+      
+      // Get start position and populate board state.
+      const startPosition: number[] = (await readContract({
+        contract: gameContract,
+        method: "getBoard",
+        params: [expectedSessionId]
+      })).map(bint => parseInt(bint.toString()))
+
+      // Populate tiles.
+      let tiles: Tile[] = [];
+      let idx = 0;
+
+      for(let i = 0; i < 4; i++) {
+        for(let j = 0; j < 4; j++) {
+          const value = startPosition[idx];
+          if(value > 0) {
+            tiles.push({
+              id: generateTileId(),
+              value: value > 0 ? 2 ** value : 0,
+              row: i,
+              col: j,
+              isNew: true
+            })
+          }
+          idx += 1;
+        }
+      }
+      
+      const newBoardState: BoardState = {
+        tiles: tiles,
+        score: 0,
+      }
+
+      // Log
+      console.log("Session ID: ", expectedSessionId);
+      
+      // Set states
+      setSessionId(expectedSessionId);
+      setBoardState(newBoardState);
+      setGameLoading(false);
+      setGameOver(false);
+    } catch(error) {
+      alert(`Error starting game for ${account?.address}: ${(error as any).message}`)
+      console.log("Error starting new game: ", error);
+      setGameLoading(false);
+    }
+  }
+
+
+  // =============================================================//
+  //                       UI GAME LOGIC                          //
+  // =============================================================//
+
   const [gameOver, setGameOver] = useState<boolean>(false)
   const [isAnimating, setIsAnimating] = useState<boolean>(false)
 
@@ -103,20 +188,7 @@ export default function Game2048() {
     return () => window.removeEventListener("keydown", handleKeyDown)
   }, [boardState, gameOver, isAnimating])
 
-  // Initialize the game with two random tiles
-  const initializeGame = () => {
-    const newBoardState: BoardState = {
-      tiles: [],
-      score: 0,
-    }
-
-    // Add two random tiles
-    addRandomTile(newBoardState)
-    addRandomTile(newBoardState)
-
-    setBoardState(newBoardState)
-    setGameOver(false)
-  }
+  
 
   // Generate a unique ID for tiles
   const generateTileId = () => {
@@ -475,9 +547,9 @@ export default function Game2048() {
 
         {
           !account 
-            ? <FunPurpleButton text="Sign-in to play" loadingText="Creating player" isLoading={loginLoading} onClick={handleLogin} /> 
+            ? <FunPurpleButton text="Sign-in to play" loadingText="Creating player..." isLoading={loginLoading} onClick={handleLogin} /> 
             : <div className="flex flex-col items-center gap-4">
-                <FunPurpleButton text="New Game" loadingText="" onClick={initializeGame} />
+                <FunPurpleButton text="New Game" loadingText="Starting game..." isLoading={gameLoading} onClick={initializeGame} />
                 <p><span className="font-bold">Player</span>: {account.address.slice(0,4) + '...' + account.address.slice(-2)}</p>
               </div>
         }

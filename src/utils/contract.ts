@@ -11,6 +11,25 @@ export const gameContract = getContract({
     abi: [
         {
             "type": "function",
+            "name": "getBoard",
+            "inputs": [
+                {
+                    "name": "sessionId",
+                    "type": "bytes32",
+                    "internalType": "bytes32"
+                }
+            ],
+            "outputs": [
+                {
+                    "name": "boardArr",
+                    "type": "uint8[16]",
+                    "internalType": "uint8[16]"
+                }
+            ],
+            "stateMutability": "view"
+        },
+        {
+            "type": "function",
             "name": "latestBoard",
             "inputs": [
                 {
