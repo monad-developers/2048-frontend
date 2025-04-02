@@ -3,13 +3,13 @@ import { Loader2 } from 'lucide-react';
 
 interface LoginButtonProps {
   text: string;
-  loadingText: string;
+  loadingText?: string;
   isLoading?: boolean;
   onClick?: () => void;
   
 }
 
-export function FunPurpleButton({ text, loadingText, onClick, isLoading = false }: LoginButtonProps) {
+export default function FunPurpleButton({ text, loadingText, onClick, isLoading = false }: LoginButtonProps) {
   const [isPressed, setIsPressed] = useState(false);
 
   const handleClick = () => {
