@@ -11,11 +11,10 @@ import LoginButton from "./components/LoginButton";
 import NewGameButton from "./components/NewGameButton";
 
 // Utils
-import { monadTestnet } from "./utils/chain";
 import { gameContract } from "./utils/contract";
-import { client, rpcRequest } from "./utils/client"
+import { rpcRequest } from "./utils/client"
 import { encodePacked, keccakId } from "thirdweb/utils";
-import { encode, eth_getTransactionCount, Hex, keccak256, prepareContractCall, sendAndConfirmTransaction, sendTransaction, waitForReceipt } from "thirdweb";
+import { eth_getTransactionCount, Hex, keccak256, prepareContractCall, sendAndConfirmTransaction, sendTransaction } from "thirdweb";
 
 
 enum Direction { UP, DOWN, LEFT, RIGHT }
@@ -106,13 +105,14 @@ export default function Game2048() {
 			method: "startGame",
 			params: [newSessionId, game]
 		})
-		console.log("Encoded start game transaction: ", await encode(transactionStartGame))
 
 		const result2 = await sendAndConfirmTransaction({
 			account,
 			transaction: transactionStartGame
 		})
 		console.log("Started game at tx: ", result2.transactionHash);
+
+		console.log("SessionId: ", newSessionId);
 
 		setOffset(4);
 		setActiveSessionId(newSessionId);
@@ -132,42 +132,54 @@ export default function Game2048() {
 
 		const start = offset;
 		const end = start + 50;
+		
 		const batch = moves.slice(start, end);
+		console.log("Remaining transactions to process: ", batch.length);
 
 		if(end > moves.length) {
-			setEncodedMoves([]);
-			setOffset(0);
+			setOffset(moves.length);
 		} else {
 			setOffset(end);
 		}
 
+		const sessionId = activeSessionId;
 		const nonce = await eth_getTransactionCount(rpcRequest, { address: account.address })
-		const transactions = batch.map(async (m, index) => {
-			return await sendTransaction({
-				account,
-				transaction: prepareContractCall({
-					contract: gameContract,
-					method: "play",
-					params: [(activeSessionId as Hex), m],
-					nonce: nonce + index
-				})
-			})
-			.then(res => {
-				console.log(`Played move at transaction: ${res.transactionHash}`);
-				return res;
-			})
-			.catch(e => {
-				throw new Error(`Failure while playing move ${index}: ${e.message}`);
-			})
+
+		batch.map(async (m, index) => {
+			sendTransactionWithRetry(prepareContractCall({
+				contract: gameContract,
+				method: "play",
+				params: [(activeSessionId as Hex), m],
+				nonce: nonce + index
+			}), index, sessionId);
 		})
-
-		const results = await Promise.all(transactions);
-		const lastHash = results[results.length - 1].transactionHash;
-		
-		await waitForReceipt({ client, chain: monadTestnet, transactionHash: lastHash});
-
-		console.log("Processed batch");
 	}, 2000)
+
+	async function sendTransactionWithRetry(preparedTx: any, index: number, sessionId: string) {
+		await new Promise(resolve => setTimeout(resolve, 1000 * index));
+
+        if(!account) {
+            alert("Not signed in.")
+            return;
+        }
+
+		if(sessionId != activeSessionId) {
+			return;
+		}
+
+        sendTransaction({
+            account,
+            transaction: preparedTx
+        })
+        .then(res => {
+            console.log(`SUCCESS-${index} Played move: ${res.transactionHash}`);
+            return res;
+        })
+        .catch(async e => {
+            console.log(`Re-trying transaction ${index}`);
+            sendTransactionWithRetry(preparedTx, index, sessionId);
+        })
+    }
 
 	// Initialize the game with two random tiles
 	const initializeGame = () => {
@@ -180,7 +192,11 @@ export default function Game2048() {
 		addRandomTile(newBoardState)
 		addRandomTile(newBoardState)
 
+		
+		setOffset(0);
+		setActiveSessionId("");
 		setEncodedMoves([tilesToBigInt(newBoardState.tiles, 0)])
+		
 		setBoardState(newBoardState)
 		setGameOver(false)
 	}
