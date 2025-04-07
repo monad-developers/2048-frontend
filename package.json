@@ -10,6 +10,7 @@
     "preview": "vite preview"
   },
   "dependencies": {
+    "@privy-io/react-auth": "^2.8.2",
     "@radix-ui/react-slot": "^1.1.2",
     "@tailwindcss/vite": "^4.0.17",
     "@types/node": "^22.13.14",
@@ -20,8 +21,8 @@
     "react-dom": "^19.0.0",
     "tailwind-merge": "^3.0.2",
     "tailwindcss": "^4.0.17",
-    "thirdweb": "^5.93.6",
-    "tw-animate-css": "^1.2.4"
+    "tw-animate-css": "^1.2.4",
+    "viem": "^2.26.0"
   },
   "devDependencies": {
     "@eslint/js": "^9.21.0",

@@ -1,22 +1,16 @@
 // Hooks
 import { useState } from "react";
-import { useConnect } from "thirdweb/react";
+import { useLogin } from "@privy-io/react-auth";
 
 // UI
 import FunPurpleButton from "./FunPurpleButton"
-
-
-// Utils
-import { client } from "@/utils/client";
-import { inAppWallet } from "thirdweb/wallets";
-import { hasStoredPasskey } from "thirdweb/wallets/in-app";
 
 type LoginButtonProps = {
     initFn: () => void;
 }
 
 export default function LoginButton({ initFn }: LoginButtonProps) {
-    const { connect } = useConnect()
+    const { login } = useLogin();
       
     const [loginLoading, setLoginLoading] = useState(false);
     
@@ -24,22 +18,8 @@ export default function LoginButton({ initFn }: LoginButtonProps) {
         setLoginLoading(true);
     
         try {
-            await connect(async () => {
-                const wallet = inAppWallet({
-                    auth: {
-                        options: ["passkey"],
-                    },
-                });
-                const hasPasskey = await hasStoredPasskey(client);
-                await wallet.connect({
-                    client,
-                    strategy: "passkey",
-                    type: hasPasskey ? "sign-in" : "sign-up",
-                });
-                return wallet;
-            });
-
             initFn();
+            login()
 
             setLoginLoading(false);
           
