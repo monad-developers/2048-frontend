@@ -497,30 +497,30 @@ export default function Game2048() {
 
 				// Add a new tile after the animation
 				setTimeout(() => {
-				try {
-					// Create a new copy to avoid mutation issues
-					const updatedBoardState = {
-						tiles: [...newBoardState.tiles],
-						score: newBoardState.score,
+					try {
+						// Create a new copy to avoid mutation issues
+						const updatedBoardState = {
+							tiles: [...newBoardState.tiles],
+							score: newBoardState.score,
+						}
+
+						addRandomTile(updatedBoardState)
+						setBoardState(updatedBoardState)
+
+						// Check if the game is over
+						if (checkGameOver(updatedBoardState)) {
+							setGameOver(true)
+						}
+
+						// Add move
+						setEncodedMoves([...encodedMoves, tilesToBigInt(updatedBoardState.tiles, direction)])
+
+						// Resume moves
+						setIsAnimating(false)
+					} catch (error) {
+						console.error("Error updating board state:", error)
+						setIsAnimating(false)
 					}
-
-					addRandomTile(updatedBoardState)
-					setBoardState(updatedBoardState)
-
-					// Check if the game is over
-					if (checkGameOver(updatedBoardState)) {
-						setGameOver(true)
-					}
-
-					// Add move
-					setEncodedMoves([...encodedMoves, tilesToBigInt(updatedBoardState.tiles, direction)])
-
-					// Resume moves
-					setIsAnimating(false)
-				} catch (error) {
-					console.error("Error updating board state:", error)
-					setIsAnimating(false)
-				}
 				}, 150) // Wait for the movement animation to complete
 			}
 		} catch (error) {
@@ -624,11 +624,11 @@ export default function Game2048() {
     <Container>
       <div className="flex items-center justify-between w-full max-w-md mb-4">
         <Scorecard score={boardState.score}/>
-        {
-          !user 
-            ? <LoginButton initFn={initializeGame}/>
-            : <NewGameButton resetGame={initializeGame} />
-        }
+			{
+				!user 
+					? <LoginButton initFn={initializeGame}/>
+					: <NewGameButton resetGame={initializeGame} />
+			}
       </div>
 
       <Board tiles ={boardState.tiles} />
