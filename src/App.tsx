@@ -16,7 +16,7 @@ import { GAME_CONTRACT_ADDRESS } from "./utils/constants";
 
 import { monadTestnet } from "viem/chains";
 import { usePrivy, useWallets } from "@privy-io/react-auth";
-import { createWalletClient, custom, encodeFunctionData, encodePacked, Hex, keccak256, parseGwei, SendTransactionParameters, toHex } from "viem";
+import { createWalletClient, custom, encodeFunctionData, encodePacked, Hex, keccak256, parseGwei, SendTransactionParameters, toHex, TransactionReceipt } from "viem";
 import { waitForTransactionReceipt } from "viem/actions";
 
 enum Direction { UP, DOWN, LEFT, RIGHT }
@@ -40,6 +40,7 @@ export default function Game2048() {
 
 	
 	const [gameOver, setGameOver] = useState<boolean>(false)
+	const [gameError, setGameError] = useState<boolean>(false)
   	const [isAnimating, setIsAnimating] = useState<boolean>(false)
 
 	const [offset, setOffset] = useState<number>(0);
@@ -81,249 +82,295 @@ export default function Game2048() {
 
 	// Starts a game.
 	useAsyncInterval(async () => {
-		// If not logged in: exit
-		if (!ready || !wallets) return;
 
-		// If no privy wallet: exit
-        const userWallet = wallets.find((w) => w.walletClientType == "privy");
-        if(!userWallet) return;
-		
-		// If there is an active session ID: exit
-		if(activeSessionId) return;
+		if(gameOver || gameError) return;
 
-		// If less than start position + 3 moves made: exit
-		const moves = encodedMoves;
-		if(moves.length < 4) return;
+		try {
+			// If not logged in: exit
+			if (!ready || !wallets) return;
 
-		// Create random session ID
-		const newSessionId: Hex = keccak256(toHex(Math.random().toString()));
+			// If no privy wallet: exit
+			const userWallet = wallets.find((w) => w.walletClientType == "privy");
+			if(!userWallet) return;
+			
+			// If there is an active session ID: exit
+			if(activeSessionId) return;
 
-		// Prepare the start position + first 3 moves of the game, and the hash of these boards.
-		const game = [moves[0], moves[1], moves[2], moves[3]] as readonly [bigint, bigint, bigint, bigint];
-		const gameHash: Hex = keccak256(encodePacked(["uint256[4]"], [game]))
+			// If less than start position + 3 moves made: exit
+			const moves = encodedMoves;
+			if(moves.length < 4) return;
 
-		// Get provider
-		const ethereumProvider = await userWallet.getEthereumProvider();
-        const provider = createWalletClient({
-            chain: monadTestnet,
-            transport: custom(ethereumProvider),
-        });
+			// Create random session ID
+			const newSessionId: Hex = keccak256(toHex(Math.random().toString()));
 
-		// Prepare transaction: prepareGame
-		const prepareGameAbi = [
-			{
-				"type": "function",
-				"name": "prepareGame",
-				"inputs": [
-					{
-						"name": "sessionId",
-						"type": "bytes32",
-						"internalType": "bytes32"
-					},
-					{
-						"name": "game",
-						"type": "bytes32",
-						"internalType": "bytes32"
-					}
-				],
-				"outputs": [],
-				"stateMutability": "nonpayable"
+			// Prepare the start position + first 3 moves of the game, and the hash of these boards.
+			const game = [moves[0], moves[1], moves[2], moves[3]] as readonly [bigint, bigint, bigint, bigint];
+			const gameHash: Hex = keccak256(encodePacked(["uint256[4]"], [game]))
+
+			// Get provider
+			const ethereumProvider = await userWallet.getEthereumProvider();
+			const provider = createWalletClient({
+				chain: monadTestnet,
+				transport: custom(ethereumProvider),
+			});
+
+			// Prepare transaction: prepareGame
+			const prepareGameAbi = [
+				{
+					"type": "function",
+					"name": "prepareGame",
+					"inputs": [
+						{
+							"name": "sessionId",
+							"type": "bytes32",
+							"internalType": "bytes32"
+						},
+						{
+							"name": "game",
+							"type": "bytes32",
+							"internalType": "bytes32"
+						}
+					],
+					"outputs": [],
+					"stateMutability": "nonpayable"
+				}
+			]
+			const prepareGameTx: SendTransactionParameters = {
+				chain: monadTestnet,
+				account: userWallet.address as Hex,
+				to: GAME_CONTRACT_ADDRESS,
+				gas: BigInt(75_000),
+				maxFeePerGas: parseGwei("55"),
+				data: encodeFunctionData({
+					abi: prepareGameAbi,
+					functionName: "prepareGame",
+					args: [newSessionId, gameHash]
+				}),
 			}
-		]
-		const prepareGameTx: SendTransactionParameters = {
-			chain: monadTestnet,
-			account: userWallet.address as Hex,
-			to: GAME_CONTRACT_ADDRESS,
-			gas: BigInt(75_000),
-			maxFeePerGas: parseGwei("55"),
-			data: encodeFunctionData({
-				abi: prepareGameAbi,
-				functionName: "prepareGame",
-				args: [newSessionId, gameHash]
-			}),
-		}
 
-		// Send transaction: prepareGame
-		const prepareGameTxHash = await provider.sendTransaction(prepareGameTx);
-		console.log("Prepared game at tx: ", prepareGameTxHash);
+			// Send transaction: prepareGame
+			const prepareGameTxHash = await provider.sendTransaction(prepareGameTx);
+			console.log("Prepared game at tx: ", prepareGameTxHash);
 
-		await waitForTransactionReceipt(publicClient, { hash: prepareGameTxHash });
+			await waitForTransactionReceipt(publicClient, { hash: prepareGameTxHash });
 
-		// Prepare transaction: startGame
-		const startGameAbi = [
-			{
-				"type": "function",
-				"name": "startGame",
-				"inputs": [
-					{
-						"name": "sessionId",
-						"type": "bytes32",
-						"internalType": "bytes32"
-					},
-					{
-						"name": "game",
-						"type": "uint256[4]",
-						"internalType": "uint256[4]"
-					}
-				],
-				"outputs": [],
-				"stateMutability": "nonpayable"
+			// Prepare transaction: startGame
+			const startGameAbi = [
+				{
+					"type": "function",
+					"name": "startGame",
+					"inputs": [
+						{
+							"name": "sessionId",
+							"type": "bytes32",
+							"internalType": "bytes32"
+						},
+						{
+							"name": "game",
+							"type": "uint256[4]",
+							"internalType": "uint256[4]"
+						}
+					],
+					"outputs": [],
+					"stateMutability": "nonpayable"
+				}
+			]
+			const startGameTx = {
+				...prepareGameTx,
+				gas: BigInt(500_000),
+				data: encodeFunctionData({
+					abi: startGameAbi,
+					functionName: "startGame",
+					args: [newSessionId, game]
+				})
 			}
-		]
-		const startGameTx = {
-			...prepareGameTx,
-			gas: BigInt(500_000),
-			data: encodeFunctionData({
-				abi: startGameAbi,
-				functionName: "startGame",
-				args: [newSessionId, game]
-			})
+
+			// Send transaction: prepareGame
+			const startGameTxHash = await provider.sendTransaction(startGameTx);
+			console.log("Started game at tx: ", startGameTxHash);
+
+			await waitForTransactionReceipt(publicClient, { hash: startGameTxHash });
+
+			setOffset(4);
+			setActiveSessionId(newSessionId);
+
+		} catch(error) {
+			alert("Error starting game. Please check console for full error.")
+			console.log(error)
+			setGameError(true);
 		}
-
-		// Send transaction: prepareGame
-		const startGameTxHash = await provider.sendTransaction(startGameTx);
-		console.log("Started game at tx: ", startGameTxHash);
-
-		await waitForTransactionReceipt(publicClient, { hash: startGameTxHash });
-
-		setOffset(4);
-		setActiveSessionId(newSessionId);
 
 	}, 1000)
 
 	useAsyncInterval(async () => {
-		// If not logged in: exit
-		if (!ready || !wallets) return;
 
-		// If no privy wallet: exit
-        const userWallet = wallets.find((w) => w.walletClientType == "privy");
-        if(!userWallet) return;
+		if(gameOver || gameError) return;
+
+		try {
 		
-		// If there is no active session ID: exit
-		if(!activeSessionId) return;
+			// If not logged in: exit
+			if (!ready || !wallets) return;
 
-		// If no moves: exit
-		const moves = encodedMoves;
-		if(moves.length === 0) {
-			return
-		}
+			// If no privy wallet: exit
+			const userWallet = wallets.find((w) => w.walletClientType == "privy");
+			if(!userWallet) return;
+			
+			// If there is no active session ID: exit
+			if(!activeSessionId) return;
 
-		// Get provider
-		const ethereumProvider = await userWallet.getEthereumProvider();
-        const provider = createWalletClient({
-            chain: monadTestnet,
-            transport: custom(ethereumProvider),
-        });
-
-
-		// Process a batch of at most 25 txs at a time.
-		const batchSize = 25;
-		const start = offset;
-		const end = start + batchSize;
-		
-		const batch = moves.slice(start, end);
-		console.log("Remaining transactions to process: ", batch.length);
-		console.log("Processing batch: ", batch);
-
-		// If no new moves: exit.
-		if(start == moves.length) {
-			return;
-		}
-
-		// Update offset.
-		if(end > moves.length) {
-			setOffset(moves.length);
-		} else {
-			setOffset(end);
-		}
-
-		// Get game session ID
-		const sessionId = activeSessionId;
-		// Get user nonce. We order the batch of transactions sequentially by nonce.
-		const nonce = await publicClient.getTransactionCount({ address: userWallet.address as Hex })
-		console.log("User nonce: ", nonce);
-		
-		// Same gas estimate will be passed to all 25 transactions.
-		const playAbi = [
-			{
-				"type": "function",
-				"name": "play",
-				"inputs": [
-					{
-						"name": "sessionId",
-						"type": "bytes32",
-						"internalType": "bytes32"
-					},
-					{
-						"name": "result",
-						"type": "uint256",
-						"internalType": "uint256"
-					}
-				],
-				"outputs": [],
-				"stateMutability": "nonpayable"
+			// If no moves: exit
+			const moves = encodedMoves;
+			if(moves.length === 0) {
+				return
 			}
-		];
 
-		// Build and sign batch of transactions
-		const startTime = Date.now();
-		
-		// Await first signature to warm up wallet server.
-		const sig0 = await provider.signTransaction({
-			account: userWallet.address as Hex,
-			nonce: nonce,
-			to: GAME_CONTRACT_ADDRESS,
-			gas: BigInt(200_000),
-			maxFeePerGas: parseGwei("52"),
-			data: encodeFunctionData({
-				abi: playAbi,
-				functionName: "play",
-				args: [(sessionId as Hex), batch[0]]
-			})
-		})
-		console.log("Signed tx 0: ", sig0);
+			// Get provider
+			const ethereumProvider = await userWallet.getEthereumProvider();
+			const provider = createWalletClient({
+				chain: monadTestnet,
+				transport: custom(ethereumProvider),
+			});
 
-		// Sign all txs
-		const signedTxsPromises: Promise<Hex>[] = Array(batch.length).fill("0x").map(async (_, index) => {  
-			if(index ==  0) {
-				return sig0;
+
+			// Process a batch of at most 25 txs at a time.
+			const batchSize = 25;
+			const start = offset;
+			const end = start + batchSize;
+			
+			const batch = moves.slice(start, end);
+			console.log("Remaining transactions to process: ", batch.length);
+			console.log("Processing batch: ", batch);
+
+			// If no new moves: exit.
+			if(start == moves.length) {
+				return;
 			}
-			const sig = await provider.signTransaction({
+
+			// Update offset.
+			if(end > moves.length) {
+				setOffset(moves.length);
+			} else {
+				setOffset(end);
+			}
+
+			// Get game session ID
+			const sessionId = activeSessionId;
+			// Get user nonce. We order the batch of transactions sequentially by nonce.
+			const nonce = await publicClient.getTransactionCount({ address: userWallet.address as Hex })
+			console.log("User nonce: ", nonce);
+			
+			// Same gas estimate will be passed to all 25 transactions.
+			const playAbi = [
+				{
+					"type": "function",
+					"name": "play",
+					"inputs": [
+						{
+							"name": "sessionId",
+							"type": "bytes32",
+							"internalType": "bytes32"
+						},
+						{
+							"name": "result",
+							"type": "uint256",
+							"internalType": "uint256"
+						}
+					],
+					"outputs": [],
+					"stateMutability": "nonpayable"
+				}
+			];
+
+			// Build and sign batch of transactions
+			const startTime = Date.now();
+			
+			// Await first signature to warm up wallet server.
+			const sig0 = await provider.signTransaction({
 				account: userWallet.address as Hex,
-				nonce: nonce + index,
+				nonce: nonce,
 				to: GAME_CONTRACT_ADDRESS,
 				gas: BigInt(200_000),
 				maxFeePerGas: parseGwei("52"),
 				data: encodeFunctionData({
 					abi: playAbi,
 					functionName: "play",
-					args: [(activeSessionId as Hex), batch[index]]
+					args: [(sessionId as Hex), batch[0]]
 				})
 			})
-			console.log(`Signed tx ${index}: `, sig);
+			console.log("Signed tx 0: ", sig0);
 
-			return sig;
-		})
-		const signedTxs: Hex[] = await Promise.all(signedTxsPromises);
-		console.log(`Signed txs in ${Date.now() - startTime} ms`);
+			// Sign all txs
+			const signedTxsPromises: Promise<Hex>[] = Array(batch.length).fill("0x").map(async (_, index) => {  
+				if(index ==  0) {
+					return sig0;
+				}
+				const sig = await provider.signTransaction({
+					account: userWallet.address as Hex,
+					nonce: nonce + index,
+					to: GAME_CONTRACT_ADDRESS,
+					gas: BigInt(200_000),
+					maxFeePerGas: parseGwei("52"),
+					data: encodeFunctionData({
+						abi: playAbi,
+						functionName: "play",
+						args: [(activeSessionId as Hex), batch[index]]
+					})
+				})
+				console.log(`Signed tx ${index}: `, sig);
 
-		// Prepare RPC call params
-		const params = signedTxs.map((tx, index) => {
-			return {
-				jsonrpc: "2.0",
-				id: index,
-				method: "eth_sendRawTransaction",
-				params: [tx],
+				return sig;
+			})
+			const signedTxs: Hex[] = await Promise.all(signedTxsPromises);
+			console.log(`Signed txs in ${Date.now() - startTime} ms`);
+
+			// Prepare RPC call params
+			const params = signedTxs.map((tx, index) => {
+				return {
+					jsonrpc: "2.0",
+					id: index,
+					method: "eth_sendRawTransaction",
+					params: [tx],
+				}
+			})
+			
+			const result = await post({
+				url: monadTestnet.rpcUrls.default.http[0],
+				params
+			})
+			console.log(`Sent transactions in ${Date.now() - startTime} ms`);
+			console.log("Sent transactions: ", result);
+
+			if (result.length > 0) {
+				const txHash = result[result.length - 1].result;
+			
+				// Timeout after 4 seconds
+				const timeout = new Promise((_, reject) =>
+					setTimeout(() => reject(new Error(`Timeout: Transaction took too long: ${txHash}`)), 4000)
+				);
+			
+				let receipt: TransactionReceipt;
+				try {
+					receipt = await Promise.race([
+						waitForTransactionReceipt(publicClient, { hash: txHash }),
+						timeout,
+					]) as TransactionReceipt;
+				} catch (err) {
+					throw err; // Rethrow the timeout or other errors
+				}
+			
+				if (receipt.status !== "success") {
+					throw new Error(`Transaction unsuccessful: ${txHash}`);
+				} else {
+					console.log("Processed all move txs successfully");
+				}
 			}
-		})
-		
-		const result = await post({
-			url: monadTestnet.rpcUrls.default.http[0],
-			params
-		})
-		console.log(`Sent transactions in ${Date.now() - startTime} ms`);
-		console.log("Sent transactions: ", result);
-	}, 3000)
+
+		} catch(error) {
+			alert("Error playing game. Please check console for full error.")
+			console.log(error)
+			setGameError(true);
+		}
+	}, 5000)
 
 	// Initialize the game with two random tiles
 	const initializeGame = () => {
@@ -631,7 +678,7 @@ export default function Game2048() {
 			}
       </div>
 
-      <Board tiles ={boardState.tiles} score={boardState.score} gameOver={gameOver} initializeGame={initializeGame} />
+      <Board tiles ={boardState.tiles} score={boardState.score} gameOver={gameOver} gameError={gameError} initializeGame={initializeGame} />
     </Container>
   )
 }
