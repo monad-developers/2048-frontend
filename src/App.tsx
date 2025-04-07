@@ -631,7 +631,7 @@ export default function Game2048() {
 			}
       </div>
 
-      <Board tiles ={boardState.tiles} />
+      <Board tiles ={boardState.tiles} score={boardState.score} gameOver={gameOver} initializeGame={initializeGame} />
     </Container>
   )
 }

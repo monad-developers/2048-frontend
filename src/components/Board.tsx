@@ -1,3 +1,5 @@
+import FunPurpleButton from "./FunPurpleButton"
+
 type Tile = {
     id: string
     value: number
@@ -8,10 +10,13 @@ type Tile = {
 }
 
 type BoardProps = {
+    score: number;
     tiles: Tile[];
+    gameOver: boolean;
+    initializeGame: () => void;
 }
 
-export default function Board({ tiles }: BoardProps) {
+export default function Board({ tiles, score, gameOver, initializeGame }: BoardProps) {
 
     // Calculate the position of a tile
     const getTilePosition = (row: number, col: number) => {
@@ -92,6 +97,17 @@ export default function Board({ tiles }: BoardProps) {
                     <span className={`font-bold ${getTileFontSize(tile.value)}`}>{tile.value}</span>
                 </div>
             ))}
+
+            {/* Game over overlay */}
+            {gameOver && (
+                <div className="absolute inset-0 flex items-center justify-center bg-black bg-opacity-50 rounded-lg z-20">
+                    <div className="p-6 bg-white rounded-lg text-center">
+                        <h2 className="text-2xl font-bold mb-4">Game Over!</h2>
+                        <p className="mb-4">Your score: {score}</p>
+                        <FunPurpleButton text="Play Again" onClick={initializeGame} />
+                    </div>
+                </div>
+            )}
         </div>
 
         <div className="mt-6 text-center text-gray-600">
