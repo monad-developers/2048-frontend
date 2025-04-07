@@ -41,7 +41,7 @@ export default function Scorecard({ score }: ScorecardProps) {
         <Card className="p-4 text-center bg-purple-600 font-bold shadow-[0_8px_0_rgb(107,33,168)] uppercase tracking-widest">
             <h2 className="text-sm font-bold text-white">SCORE</h2>
             <p className="text-4xl font-extrabold text-yellow-400 retro-number">{displayScore}</p>
-            <style jsx="true">{`
+            <style>{`
                 @keyframes flicker {
                 0% { opacity: 1; }
                 50% { opacity: 0.8; }

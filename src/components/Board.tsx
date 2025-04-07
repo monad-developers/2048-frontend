@@ -127,16 +127,16 @@ export default function Board({ tiles, score, gameOver, gameError, initializeGam
             <p>Join the numbers and get to the 2048 tile!</p>
         </div>
 
-        <style jsx={"true"} global={"true"}>{`
+        <style>{`
         @keyframes appear {
-        0% { transform: scale(0.5); opacity: 0; }
-        100% { transform: scale(1); opacity: 1; }
+            0% { transform: scale(0.5); opacity: 0; }
+            100% { transform: scale(1); opacity: 1; }
         }
 
         @keyframes merge {
-        0% { transform: scale(1); }
-        50% { transform: scale(1.2); }
-        100% { transform: scale(1); }
+            0% { transform: scale(1); }
+            50% { transform: scale(1.2); }
+            100% { transform: scale(1); }
         }
         `}</style>
     </>
