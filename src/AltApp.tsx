@@ -16,6 +16,7 @@ import { createWalletClient, custom, Hex, parseGwei } from "viem";
 
 // Utils
 import { post } from "./utils/fetch";
+import { Button } from "./components/ui/button";
 
 export default function App() {
     // Get connected user and wallet.
@@ -95,15 +96,20 @@ export default function App() {
 
             // Fire toast confirmation with benchmark and transaction hash.
             console.log(`Succeeded in ${time} ms: ${response.result}`);
-            toast.success("Confirmed transaction.", {
-                action: {
-                    label: "View",
-                    onClick: () =>
-                        console.log(
-                            `Open new tab https://testnet.monadexplorer.com/tx/${response.result}`
-                        ),
-                },
-                description: `In: ${time} ms`,
+            toast.success(`Confirmed transaction in: ${time} ms`, {
+                action: (
+                    <Button
+                        onClick={() =>
+                            window.open(
+                                `https://testnet.monadexplorer.com/tx/${response.result}`,
+                                "_blank",
+                                "noopener,noreferrer"
+                            )
+                        }
+                    >
+                        View
+                    </Button>
+                ),
             });
         } catch (error) {
             console.log(error);
