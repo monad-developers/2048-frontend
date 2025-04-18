@@ -17,6 +17,7 @@ import { createWalletClient, custom, Hex, parseGwei } from "viem";
 // Utils
 import { post } from "./utils/fetch";
 import { Button } from "./components/ui/button";
+import { waitForTransactionReceipt } from "viem/actions";
 
 export default function App() {
     // Get connected user and wallet.
@@ -87,16 +88,44 @@ export default function App() {
                     params: [signedTransaction],
                 },
             });
-            const time = Date.now() - startTime;
+            const timeForSent = Date.now() - startTime;
 
             if (response.error) {
-                console.log(`Failed in ${time} ms`);
-                throw Error(response.error);
+                console.log(`Failed in ${timeForSent} ms`);
+                throw Error(response.error.message);
             }
 
+            // Fire toast info with benchmark and transaction hash.
+            console.log(`Sent in ${timeForSent} ms: ${response.result}`);
+            toast.info(`Sent transaction.`, {
+                description: `Time: ${timeForSent} ms`,
+                action: (
+                    <Button
+                        onClick={() =>
+                            window.open(
+                                `https://testnet.monadexplorer.com/tx/${response.result}`,
+                                "_blank",
+                                "noopener,noreferrer"
+                            )
+                        }
+                    >
+                        Track
+                    </Button>
+                ),
+            });
+
+            // Wait for transaction to confirm.
+            await waitForTransactionReceipt(publicClient, {
+                hash: response.result,
+            });
+            const timeForReceipt = Date.now() - startTime;
+
             // Fire toast confirmation with benchmark and transaction hash.
-            console.log(`Succeeded in ${time} ms: ${response.result}`);
-            toast.success(`Confirmed transaction in: ${time} ms`, {
+            console.log(
+                `Confirmed in ${timeForReceipt} ms: ${response.result}`
+            );
+            toast.success(`Confirmed transaction.`, {
+                description: `Time: ${timeForReceipt} ms`,
                 action: (
                     <Button
                         onClick={() =>

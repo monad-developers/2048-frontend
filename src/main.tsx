@@ -26,7 +26,7 @@ createRoot(document.getElementById("root")!).render(
             }}
         >
             <App />
-            <Toaster richColors theme="dark" />
+            <Toaster richColors expand={true} />
         </PrivyProvider>
     </StrictMode>
 );
