@@ -1,8 +1,7 @@
 import { StrictMode } from "react";
 import { createRoot } from "react-dom/client";
 import "./index.css";
-// import App from './App.tsx'
-import App from "./AltApp";
+import App from "./App.tsx";
 import { monadTestnet } from "viem/chains";
 import { PrivyProvider } from "@privy-io/react-auth";
 import { Toaster } from "@/components/ui/sonner";
