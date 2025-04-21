@@ -3,6 +3,7 @@ import { publicClient } from "@/utils/client";
 import { GAME_CONTRACT_ADDRESS } from "@/utils/constants";
 import { post } from "@/utils/fetch";
 import { usePrivy, useWallets } from "@privy-io/react-auth";
+import { ExternalLink } from "lucide-react";
 import { useEffect, useRef } from "react";
 import { toast } from "sonner";
 import {
@@ -34,6 +35,7 @@ export function useTransactions() {
                 address: user.wallet.address as Hex,
             });
 
+            console.log("Setting nonce: ", nonce);
             userNonce.current = nonce;
         }
 
@@ -57,14 +59,16 @@ export function useTransactions() {
                 transport: custom(ethereumProvider),
             });
 
+            console.log("Setting provider: ", provider);
             walletClient.current = provider;
         }
 
         getWalletClient();
-    }, [user]);
+    }, [user, ready, wallets]);
 
     // Sends a transaction without waiting for receipt.
     async function sendRawTransaction({
+        successText,
         gas,
         maxFeePerGas = parseGwei("50"),
         maxPriorityFeePerGas = parseGwei("2"),
@@ -74,6 +78,7 @@ export function useTransactions() {
         maxFeePerGas?: BigInt;
         maxPriorityFeePerGas?: BigInt;
         data: Hex;
+        successText?: string;
     }) {
         const nonce = userNonce.current;
         userNonce.current = nonce + 1;
@@ -87,7 +92,7 @@ export function useTransactions() {
             const startTime = Date.now();
             const signedTransaction = await provider.signTransaction({
                 to: GAME_CONTRACT_ADDRESS,
-                account: provider,
+                account: user?.wallet?.address,
                 data,
                 nonce,
                 gas,
@@ -113,8 +118,8 @@ export function useTransactions() {
 
             // Fire toast info with benchmark and transaction hash.
             console.log(`Transaction sent in ${time} ms: ${response.result}`);
-            toast.info(`Sent transaction.`, {
-                description: `Time: ${time} ms`,
+            toast.success(`Sent transaction.`, {
+                description: `${successText} Time: ${time} ms`,
                 action: (
                     <Button
                         className="outline outline-white"
@@ -126,7 +131,10 @@ export function useTransactions() {
                             )
                         }
                     >
-                        Track
+                        <div className="flex items-center gap-1 p-1">
+                            <p>View</p>
+                            <ExternalLink className="w-4 h-4" />
+                        </div>
                     </Button>
                 ),
             });
@@ -151,6 +159,10 @@ export function useTransactions() {
     // Initializes a game. Calls `prepareGame` and `startGame`.
     async function initializeGameTransaction(moves: bigint[]): Promise<Hex> {
         if (moves.length < 4) {
+            throw Error("Providing less than 4 moves to start the game.");
+        }
+
+        if (moves.length > 4) {
             throw Error("Providing more than 4 moves to start the game.");
         }
 
@@ -178,6 +190,7 @@ export function useTransactions() {
         // Sign and send transaction: prepare game
         console.log("Preparing game!");
         await sendRawTransaction({
+            successText: "Reserved game!",
             gas: BigInt(75_000),
             data: encodeFunctionData({
                 abi: [
@@ -208,6 +221,7 @@ export function useTransactions() {
         // Sign and send transaction: start game
         console.log("Starting game!");
         await sendRawTransaction({
+            successText: "Started game!",
             gas: BigInt(500_000),
             data: encodeFunctionData({
                 abi: [
@@ -238,7 +252,11 @@ export function useTransactions() {
         return newSessionId;
     }
 
-    async function playNewMove(sessionId: Hex, move: bigint): Promise<void> {
+    async function playNewMoveTransaction(
+        sessionId: Hex,
+        move: bigint,
+        moveCount: number
+    ): Promise<void> {
         if (!ready || !wallets) {
             throw Error("Logged in user not found.");
         }
@@ -249,8 +267,9 @@ export function useTransactions() {
         }
 
         // Sign and send transaction: play move
-        console.log("Preparing game!");
+        console.log(`Playing move ${moveCount}!`);
         await sendRawTransaction({
+            successText: `Played move ${moveCount}`,
             gas: BigInt(200_000),
             data: encodeFunctionData({
                 abi: [
@@ -278,4 +297,6 @@ export function useTransactions() {
             }),
         });
     }
+
+    return { initializeGameTransaction, playNewMoveTransaction };
 }
