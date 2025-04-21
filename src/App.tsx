@@ -39,6 +39,7 @@ export default function Game2048() {
 
     const [gameOver, setGameOver] = useState<boolean>(false);
     const [gameError, setGameError] = useState<boolean>(false);
+    const [gameErrorText, setGameErrorText] = useState<string>("");
     const [isAnimating, setIsAnimating] = useState<boolean>(false);
 
     const [playedMovesCount, setPlayedMovesCount] = useState<number>(0);
@@ -325,6 +326,7 @@ export default function Game2048() {
         } catch (error) {
             console.error("Error in move function:", error);
             setGameError(true);
+            setGameErrorText((error as Error).message);
             setIsAnimating(false);
         }
     };
@@ -467,6 +469,7 @@ export default function Game2048() {
                 score={boardState.score}
                 gameOver={gameOver}
                 gameError={gameError}
+                gameErrorText={gameErrorText}
                 initializeGame={initializeGame}
             />
         </Container>

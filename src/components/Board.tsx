@@ -14,6 +14,7 @@ type BoardProps = {
     tiles: Tile[];
     gameOver: boolean;
     gameError: boolean;
+    gameErrorText: string;
     initializeGame: () => void;
 };
 
@@ -22,6 +23,7 @@ export default function Board({
     score,
     gameOver,
     gameError,
+    gameErrorText,
     initializeGame,
 }: BoardProps) {
     // Calculate the position of a tile
@@ -142,9 +144,15 @@ export default function Board({
                             <h2 className="text-2xl font-bold mb-4">
                                 Oops! Game Error :(
                             </h2>
+                            <p className="mb-2 text-red-500">
+                                <span className="text-red-600 font-bold">
+                                    Error
+                                </span>
+                                : {gameErrorText}
+                            </p>
                             <p className="mb-4">Your score: {score}</p>
                             <FunPurpleButton
-                                text="Try Again"
+                                text="Re-sync game"
                                 onClick={initializeGame}
                             />
                         </div>
