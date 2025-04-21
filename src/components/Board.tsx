@@ -152,7 +152,7 @@ export default function Board({
                             </p>
                             <p className="mb-4">Your score: {score}</p>
                             <FunPurpleButton
-                                text="Re-sync game"
+                                text="Play Again"
                                 onClick={initializeGame}
                             />
                         </div>
