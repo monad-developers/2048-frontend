@@ -16,6 +16,7 @@ import {
     parseGwei,
     toHex,
 } from "viem";
+import { waitForTransactionReceipt } from "viem/actions";
 import { monadTestnet } from "viem/chains";
 
 export function useTransactions() {
@@ -67,7 +68,7 @@ export function useTransactions() {
     }, [user, ready, wallets]);
 
     // Sends a transaction without waiting for receipt.
-    async function sendRawTransaction({
+    async function sendRawTransactionAndConfirm({
         nonce,
         successText,
         gas,
@@ -111,9 +112,11 @@ export function useTransactions() {
             const time = Date.now() - startTime;
 
             if (response.error) {
-                console.log(`Failed in ${time} ms`);
+                console.log(`Failed sent in ${time} ms`);
                 throw Error(response.error.message);
             }
+
+            const transactionHash: Hex = response.result;
 
             // Fire toast info with benchmark and transaction hash.
             console.log(`Transaction sent in ${time} ms: ${response.result}`);
@@ -124,7 +127,49 @@ export function useTransactions() {
                         className="outline outline-white"
                         onClick={() =>
                             window.open(
-                                `https://testnet.monadexplorer.com/tx/${response.result}`,
+                                `https://testnet.monadexplorer.com/tx/${transactionHash}`,
+                                "_blank",
+                                "noopener,noreferrer"
+                            )
+                        }
+                    >
+                        <div className="flex items-center gap-1 p-1">
+                            <p>View</p>
+                            <ExternalLink className="w-4 h-4" />
+                        </div>
+                    </Button>
+                ),
+            });
+
+            // Confirm transaction
+            const receipt = await waitForTransactionReceipt(publicClient, {
+                hash: transactionHash,
+            });
+
+            if (receipt.status == "reverted") {
+                console.log(
+                    `Failed confirmation in ${Date.now() - startTime} ms`
+                );
+                throw Error(
+                    `Failed to confirm transaction: ${transactionHash}`
+                );
+            }
+
+            console.log(
+                `Transaction confirmed in ${Date.now() - startTime} ms: ${
+                    response.result
+                }`
+            );
+            toast.success(`Confirmed transaction.`, {
+                description: `${successText} Time: ${
+                    Date.now() - startTime
+                } ms`,
+                action: (
+                    <Button
+                        className="outline outline-white"
+                        onClick={() =>
+                            window.open(
+                                `https://testnet.monadexplorer.com/tx/${transactionHash}`,
                                 "_blank",
                                 "noopener,noreferrer"
                             )
@@ -190,7 +235,7 @@ export function useTransactions() {
         console.log("Preparing game!");
         const nonce = userNonce.current;
         userNonce.current = nonce + 2;
-        await sendRawTransaction({
+        await sendRawTransactionAndConfirm({
             nonce,
             successText: "Reserved game!",
             gas: BigInt(75_000),
@@ -222,7 +267,7 @@ export function useTransactions() {
 
         // Sign and send transaction: start game
         console.log("Starting game!");
-        await sendRawTransaction({
+        await sendRawTransactionAndConfirm({
             nonce: nonce + 1,
             successText: "Started game!",
             gas: BigInt(500_000),
@@ -272,7 +317,7 @@ export function useTransactions() {
         const nonce = userNonce.current;
         userNonce.current = nonce + 1;
 
-        await sendRawTransaction({
+        await sendRawTransactionAndConfirm({
             nonce,
             successText: `Played move ${moveCount}`,
             gas: BigInt(200_000),
