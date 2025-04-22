@@ -157,7 +157,10 @@ export function useTransactions() {
     }
 
     // Initializes a game. Calls `prepareGame` and `startGame`.
-    async function initializeGameTransaction(moves: bigint[]): Promise<Hex> {
+    async function initializeGameTransaction(
+        sessionId: Hex,
+        moves: bigint[]
+    ): Promise<void> {
         if (moves.length < 4) {
             throw Error("Providing less than 4 moves to start the game.");
         }
@@ -174,9 +177,6 @@ export function useTransactions() {
         if (!userWallet) {
             throw Error("Wallet not found.");
         }
-
-        // Create random session ID
-        const newSessionId: Hex = keccak256(toHex(Math.random().toString()));
 
         // Prepare the start position + first 3 moves of the game, and the hash of these boards.
         const game = [moves[0], moves[1], moves[2], moves[3]] as readonly [
@@ -214,7 +214,7 @@ export function useTransactions() {
                     },
                 ],
                 functionName: "prepareGame",
-                args: [newSessionId, gameHash],
+                args: [sessionId, gameHash],
             }),
         });
 
@@ -245,11 +245,9 @@ export function useTransactions() {
                     },
                 ],
                 functionName: "startGame",
-                args: [newSessionId, game],
+                args: [sessionId, game],
             }),
         });
-
-        return newSessionId;
     }
 
     async function playNewMoveTransaction(

@@ -44,7 +44,7 @@ export default function Game2048() {
 
     const [playedMovesCount, setPlayedMovesCount] = useState<number>(0);
     const [encodedMoves, setEncodedMoves] = useState<bigint[]>([]);
-    const [activeSessionId, setActiveSessionId] = useState<string>("");
+    const [activeSessionId, setActiveSessionId] = useState<Hex>("0x");
 
     const [boardState, setBoardState] = useState<BoardState>({
         tiles: [],
@@ -91,7 +91,7 @@ export default function Game2048() {
         addRandomTile(newBoardState);
 
         setPlayedMovesCount(1);
-        setActiveSessionId("");
+        setActiveSessionId(keccak256(toHex(Math.random().toString())));
         setEncodedMoves([tilesToBigInt(newBoardState.tiles, 0)]);
 
         setBoardState(newBoardState);
@@ -288,11 +288,10 @@ export default function Game2048() {
                 const moveCount = playedMovesCount;
 
                 if (moveCount == 3) {
-                    const newSessionId = await initializeGameTransaction(
+                    await initializeGameTransaction(
+                        activeSessionId,
                         newEncodedMoves
                     );
-                    console.log("Created new session: ", newSessionId);
-                    setActiveSessionId(newSessionId);
                 }
 
                 if (moveCount > 3) {
