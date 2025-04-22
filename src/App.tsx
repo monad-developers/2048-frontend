@@ -330,7 +330,7 @@ export default function Game2048() {
                         console.error("Error updating board state:", error);
                         setIsAnimating(false);
                     }
-                }, 250); // Wait for the movement animation to complete
+                }, 50); // Wait for the movement animation to complete
             }
         } catch (error) {
             console.error("Error in move function:", error);
