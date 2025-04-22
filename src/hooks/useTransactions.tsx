@@ -68,21 +68,20 @@ export function useTransactions() {
 
     // Sends a transaction without waiting for receipt.
     async function sendRawTransaction({
+        nonce,
         successText,
         gas,
         maxFeePerGas = parseGwei("50"),
         maxPriorityFeePerGas = parseGwei("2"),
         data,
     }: {
+        nonce: number;
         gas: BigInt;
         maxFeePerGas?: BigInt;
         maxPriorityFeePerGas?: BigInt;
         data: Hex;
         successText?: string;
     }) {
-        const nonce = userNonce.current;
-        userNonce.current = nonce + 1;
-
         let e: Error | null = null;
 
         try {
@@ -189,7 +188,10 @@ export function useTransactions() {
 
         // Sign and send transaction: prepare game
         console.log("Preparing game!");
+        const nonce = userNonce.current;
+        userNonce.current = nonce + 2;
         await sendRawTransaction({
+            nonce,
             successText: "Reserved game!",
             gas: BigInt(75_000),
             data: encodeFunctionData({
@@ -221,6 +223,7 @@ export function useTransactions() {
         // Sign and send transaction: start game
         console.log("Starting game!");
         await sendRawTransaction({
+            nonce: nonce + 1,
             successText: "Started game!",
             gas: BigInt(500_000),
             data: encodeFunctionData({
@@ -266,7 +269,11 @@ export function useTransactions() {
 
         // Sign and send transaction: play move
         console.log(`Playing move ${moveCount}!`);
+        const nonce = userNonce.current;
+        userNonce.current = nonce + 1;
+
         await sendRawTransaction({
+            nonce,
             successText: `Played move ${moveCount}`,
             gas: BigInt(200_000),
             data: encodeFunctionData({

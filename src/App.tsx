@@ -288,18 +288,28 @@ export default function Game2048() {
                 const moveCount = playedMovesCount;
 
                 if (moveCount == 3) {
-                    await initializeGameTransaction(
+                    initializeGameTransaction(
                         activeSessionId,
                         newEncodedMoves
-                    );
+                    ).catch((error) => {
+                        console.error("Error in move function:", error);
+                        setGameError(true);
+                        setGameErrorText((error as Error).message);
+                        setIsAnimating(false);
+                    });
                 }
 
                 if (moveCount > 3) {
-                    await playNewMoveTransaction(
+                    playNewMoveTransaction(
                         activeSessionId as Hex,
                         encodedBoard,
                         moveCount
-                    );
+                    ).catch((error) => {
+                        console.error("Error in move function:", error);
+                        setGameError(true);
+                        setGameErrorText((error as Error).message);
+                        setIsAnimating(false);
+                    });
                 }
 
                 // Add a new tile after the animation
