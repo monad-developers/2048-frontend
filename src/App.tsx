@@ -312,25 +312,17 @@ export default function Game2048() {
                     });
                 }
 
-                // Add a new tile after the animation
-                setTimeout(() => {
-                    try {
-                        setBoardState(updatedBoardState);
-                        setEncodedMoves(newEncodedMoves);
-                        setPlayedMovesCount(moveCount + 1);
+                setBoardState(updatedBoardState);
+                setEncodedMoves(newEncodedMoves);
+                setPlayedMovesCount(moveCount + 1);
 
-                        // Check if the game is over
-                        if (checkGameOver(updatedBoardState)) {
-                            setGameOver(true);
-                        }
+                // Check if the game is over
+                if (checkGameOver(updatedBoardState)) {
+                    setGameOver(true);
+                }
 
-                        // Resume moves
-                        setIsAnimating(false);
-                    } catch (error) {
-                        console.error("Error updating board state:", error);
-                        setIsAnimating(false);
-                    }
-                }, 50); // Wait for the movement animation to complete
+                // Resume moves
+                setIsAnimating(false);
             }
         } catch (error) {
             console.error("Error in move function:", error);

@@ -67,21 +67,21 @@ export function useTransactions() {
         getWalletClient();
     }, [user, ready, wallets]);
 
-    // Sends a transaction without waiting for receipt.
+    // Sends a transaction and wait for receipt.
     async function sendRawTransactionAndConfirm({
-        nonce,
         successText,
         gas,
+        data,
+        nonce,
         maxFeePerGas = parseGwei("50"),
         maxPriorityFeePerGas = parseGwei("2"),
-        data,
     }: {
-        nonce: number;
+        successText?: string;
         gas: BigInt;
+        data: Hex;
+        nonce: number;
         maxFeePerGas?: BigInt;
         maxPriorityFeePerGas?: BigInt;
-        data: Hex;
-        successText?: string;
     }) {
         let e: Error | null = null;
 
