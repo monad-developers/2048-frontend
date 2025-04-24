@@ -10,11 +10,8 @@ import {
     createWalletClient,
     custom,
     encodeFunctionData,
-    encodePacked,
     Hex,
-    keccak256,
     parseGwei,
-    toHex,
 } from "viem";
 import { waitForTransactionReceipt } from "viem/actions";
 import { monadTestnet } from "viem/chains";
@@ -74,7 +71,7 @@ export function useTransactions() {
         data,
         nonce,
         maxFeePerGas = parseGwei("50"),
-        maxPriorityFeePerGas = parseGwei("2"),
+        maxPriorityFeePerGas = parseGwei("5"),
     }: {
         successText?: string;
         gas: BigInt;
@@ -200,9 +197,62 @@ export function useTransactions() {
         }
     }
 
+    // Returns a the latest stored baord of a game as an array.
+    async function getLatestGameBoard(
+        gameId: Hex
+    ): Promise<
+        readonly [
+            number,
+            number,
+            number,
+            number,
+            number,
+            number,
+            number,
+            number,
+            number,
+            number,
+            number,
+            number,
+            number,
+            number,
+            number,
+            number
+        ]
+    > {
+        const latestBoard = await publicClient.readContract({
+            address: GAME_CONTRACT_ADDRESS,
+            abi: [
+                {
+                    type: "function",
+                    name: "getBoard",
+                    inputs: [
+                        {
+                            name: "gameId",
+                            type: "bytes32",
+                            internalType: "bytes32",
+                        },
+                    ],
+                    outputs: [
+                        {
+                            name: "boardArr",
+                            type: "uint8[16]",
+                            internalType: "uint8[16]",
+                        },
+                    ],
+                    stateMutability: "view",
+                },
+            ],
+            functionName: "getBoard",
+            args: [gameId],
+        });
+
+        return latestBoard;
+    }
+
     // Initializes a game. Calls `prepareGame` and `startGame`.
     async function initializeGameTransaction(
-        sessionId: Hex,
+        gameId: Hex,
         moves: bigint[]
     ): Promise<void> {
         if (moves.length < 4) {
@@ -229,46 +279,14 @@ export function useTransactions() {
             bigint,
             bigint
         ];
-        const gameHash: Hex = keccak256(encodePacked(["uint256[4]"], [game]));
-
-        // Sign and send transaction: prepare game
-        console.log("Preparing game!");
-        const nonce = userNonce.current;
-        userNonce.current = nonce + 2;
-        await sendRawTransactionAndConfirm({
-            nonce,
-            successText: "Reserved game!",
-            gas: BigInt(75_000),
-            data: encodeFunctionData({
-                abi: [
-                    {
-                        type: "function",
-                        name: "prepareGame",
-                        inputs: [
-                            {
-                                name: "sessionId",
-                                type: "bytes32",
-                                internalType: "bytes32",
-                            },
-                            {
-                                name: "game",
-                                type: "bytes32",
-                                internalType: "bytes32",
-                            },
-                        ],
-                        outputs: [],
-                        stateMutability: "nonpayable",
-                    },
-                ],
-                functionName: "prepareGame",
-                args: [sessionId, gameHash],
-            }),
-        });
 
         // Sign and send transaction: start game
         console.log("Starting game!");
+        const nonce = userNonce.current;
+        userNonce.current = nonce + 1;
+
         await sendRawTransactionAndConfirm({
-            nonce: nonce + 1,
+            nonce: nonce,
             successText: "Started game!",
             gas: BigInt(500_000),
             data: encodeFunctionData({
@@ -278,7 +296,7 @@ export function useTransactions() {
                         name: "startGame",
                         inputs: [
                             {
-                                name: "sessionId",
+                                name: "gameId",
                                 type: "bytes32",
                                 internalType: "bytes32",
                             },
@@ -293,13 +311,13 @@ export function useTransactions() {
                     },
                 ],
                 functionName: "startGame",
-                args: [sessionId, game],
+                args: [gameId, game],
             }),
         });
     }
 
     async function playNewMoveTransaction(
-        sessionId: Hex,
+        gameId: Hex,
         move: bigint,
         moveCount: number
     ): Promise<void> {
@@ -328,12 +346,12 @@ export function useTransactions() {
                         name: "play",
                         inputs: [
                             {
-                                name: "sessionId",
+                                name: "gameId",
                                 type: "bytes32",
                                 internalType: "bytes32",
                             },
                             {
-                                name: "result",
+                                name: "resultBoard",
                                 type: "uint256",
                                 internalType: "uint256",
                             },
@@ -343,10 +361,14 @@ export function useTransactions() {
                     },
                 ],
                 functionName: "play",
-                args: [sessionId, move],
+                args: [gameId, move],
             }),
         });
     }
 
-    return { initializeGameTransaction, playNewMoveTransaction };
+    return {
+        initializeGameTransaction,
+        playNewMoveTransaction,
+        getLatestGameBoard,
+    };
 }

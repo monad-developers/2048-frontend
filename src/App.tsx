@@ -34,8 +34,11 @@ type BoardState = {
 
 export default function Game2048() {
     const { user } = usePrivy();
-    const { initializeGameTransaction, playNewMoveTransaction } =
-        useTransactions();
+    const {
+        initializeGameTransaction,
+        playNewMoveTransaction,
+        getLatestGameBoard,
+    } = useTransactions();
 
     const [gameOver, setGameOver] = useState<boolean>(false);
     const [gameError, setGameError] = useState<boolean>(false);
@@ -44,7 +47,7 @@ export default function Game2048() {
 
     const [playedMovesCount, setPlayedMovesCount] = useState<number>(0);
     const [encodedMoves, setEncodedMoves] = useState<bigint[]>([]);
-    const [activeSessionId, setActiveSessionId] = useState<Hex>("0x");
+    const [activeGameId, setActiveGameId] = useState<Hex>("0x");
 
     const [boardState, setBoardState] = useState<BoardState>({
         tiles: [],
@@ -91,11 +94,49 @@ export default function Game2048() {
         addRandomTile(newBoardState);
 
         setPlayedMovesCount(1);
-        setActiveSessionId(keccak256(toHex(Math.random().toString())));
+        setActiveGameId(keccak256(toHex(Math.random().toString())));
         setEncodedMoves([tilesToBigInt(newBoardState.tiles, 0)]);
 
         setBoardState(newBoardState);
         setGameOver(false);
+    };
+
+    // Resumes a game where it was left off
+    const resyncGame = async () => {
+        const newBoardState: BoardState = {
+            tiles: [],
+            score: boardState.score,
+        };
+
+        const latestBoard = await getLatestGameBoard(activeGameId);
+
+        let nonzero = false;
+        for (let i = 0; i < 4; i++) {
+            for (let j = 0; j < 4; j++) {
+                const value = latestBoard[4 * i + j];
+                if (value > 0) {
+                    nonzero = true;
+
+                    const newTile: Tile = {
+                        id: generateTileId(),
+                        value: 2 ** value,
+                        row: i,
+                        col: j,
+                        isNew: true,
+                    };
+
+                    newBoardState.tiles.push(newTile);
+                }
+            }
+        }
+
+        if (!nonzero) {
+            initializeGame();
+        } else {
+            setBoardState(newBoardState);
+            setGameErrorText("");
+            setGameError(false);
+        }
     };
 
     // Generate a unique ID for tiles
@@ -189,6 +230,8 @@ export default function Game2048() {
 
     // Move tiles in the specified direction
     const move = async (direction: Direction) => {
+        const premoveBoard = boardState;
+
         try {
             // Create a copy of the board state
             const newBoardState: BoardState = {
@@ -289,10 +332,11 @@ export default function Game2048() {
 
                 if (moveCount == 3) {
                     initializeGameTransaction(
-                        activeSessionId,
+                        activeGameId,
                         newEncodedMoves
                     ).catch((error) => {
                         console.error("Error in move function:", error);
+                        setBoardState(premoveBoard);
                         setGameError(true);
                         setGameErrorText((error as Error).message);
                         setIsAnimating(false);
@@ -301,11 +345,12 @@ export default function Game2048() {
 
                 if (moveCount > 3) {
                     playNewMoveTransaction(
-                        activeSessionId as Hex,
+                        activeGameId as Hex,
                         encodedBoard,
                         moveCount
                     ).catch((error) => {
                         console.error("Error in move function:", error);
+                        setBoardState(premoveBoard);
                         setGameError(true);
                         setGameErrorText((error as Error).message);
                         setIsAnimating(false);
@@ -326,6 +371,7 @@ export default function Game2048() {
             }
         } catch (error) {
             console.error("Error in move function:", error);
+            setBoardState(premoveBoard);
             setGameError(true);
             setGameErrorText((error as Error).message);
             setIsAnimating(false);
@@ -471,6 +517,7 @@ export default function Game2048() {
                 gameOver={gameOver}
                 gameError={gameError}
                 gameErrorText={gameErrorText}
+                resyncGame={resyncGame}
                 initializeGame={initializeGame}
             />
         </Container>

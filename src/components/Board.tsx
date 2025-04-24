@@ -15,6 +15,7 @@ type BoardProps = {
     gameOver: boolean;
     gameError: boolean;
     gameErrorText: string;
+    resyncGame: () => void;
     initializeGame: () => void;
 };
 
@@ -24,6 +25,7 @@ export default function Board({
     gameOver,
     gameError,
     gameErrorText,
+    resyncGame,
     initializeGame,
 }: BoardProps) {
     // Calculate the position of a tile
@@ -152,8 +154,8 @@ export default function Board({
                             </p>
                             <p className="mb-4">Your score: {score}</p>
                             <FunPurpleButton
-                                text="Play Again"
-                                onClick={initializeGame}
+                                text="Re-sync game"
+                                onClick={resyncGame}
                             />
                         </div>
                     </div>
