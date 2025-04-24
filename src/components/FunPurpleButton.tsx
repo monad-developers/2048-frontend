@@ -1,28 +1,32 @@
-import { useState } from 'react';
-import { Loader2 } from 'lucide-react';
+import { useState } from "react";
+import { Loader2 } from "lucide-react";
 
 interface LoginButtonProps {
-  text: string;
-  loadingText?: string;
-  isLoading?: boolean;
-  onClick?: () => void;
-  
+    text: string;
+    loadingText?: string;
+    isLoading?: boolean;
+    onClick?: () => void;
 }
 
-export default function FunPurpleButton({ text, loadingText, onClick, isLoading = false }: LoginButtonProps) {
-  const [isPressed, setIsPressed] = useState(false);
+export default function FunPurpleButton({
+    text,
+    loadingText,
+    onClick,
+    isLoading = false,
+}: LoginButtonProps) {
+    const [isPressed, setIsPressed] = useState(false);
 
-  const handleClick = () => {
-    setIsPressed(true);
-    onClick?.();
-    setTimeout(() => setIsPressed(false), 150);
-  };
+    const handleClick = () => {
+        setIsPressed(true);
+        onClick?.();
+        setTimeout(() => setIsPressed(false), 150);
+    };
 
-  return (
-    <button
-      onClick={handleClick}
-      disabled={isLoading}
-      className={`
+    return (
+        <button
+            onClick={handleClick}
+            disabled={isLoading}
+            className={`
         relative
         px-8 py-3
         font-bold text-white
@@ -37,7 +41,7 @@ export default function FunPurpleButton({ text, loadingText, onClick, isLoading 
         shadow-[0_8px_0_rgb(107,33,168)]
         hover:shadow-[0_6px_0_rgb(107,33,168)]
         active:shadow-[0_4px_0_rgb(107,33,168)]
-        ${isPressed ? 'translate-y-2' : ''}
+        ${isPressed ? "translate-y-2" : ""}
         before:absolute
         before:content-['']
         before:inset-0
@@ -47,17 +51,17 @@ export default function FunPurpleButton({ text, loadingText, onClick, isLoading 
         hover:before:bg-white/30
         active:before:bg-white/10
       `}
-    >
-      <span className="flex items-center gap-2">
-        {isLoading ? (
-          <>
-            <Loader2 className="w-5 h-5 animate-spin" />
-            <span>{loadingText}</span>
-          </>
-        ) : (
-          `${text}`
-        )}
-      </span>
-    </button>
-  );
+        >
+            <span className="flex items-center gap-2">
+                {isLoading ? (
+                    <>
+                        <Loader2 className="w-5 h-5 animate-spin" />
+                        <span>{loadingText}</span>
+                    </>
+                ) : (
+                    `${text}`
+                )}
+            </span>
+        </button>
+    );
 }

@@ -1,5 +1,7 @@
 // Hooks
 import { useEffect, useState } from "react";
+import { usePrivy } from "@privy-io/react-auth";
+import { useTransactions } from "./hooks/useTransactions";
 
 // UI
 import Board from "./components/Board";
@@ -9,10 +11,9 @@ import LoginButton from "./components/LoginButton";
 import NewGameButton from "./components/NewGameButton";
 
 // Utils
-import { usePrivy } from "@privy-io/react-auth";
 import { Hex, keccak256, toHex } from "viem";
-import { useTransactions } from "./hooks/useTransactions";
 
+// Types
 enum Direction {
     UP,
     DOWN,
@@ -33,26 +34,39 @@ type BoardState = {
 };
 
 export default function Game2048() {
+    // =============================================================//
+    //                      Custom Hook Values                      //
+    // =============================================================//
+
     const { user } = usePrivy();
+
     const {
-        initializeGameTransaction,
-        playNewMoveTransaction,
         getLatestGameBoard,
+        playNewMoveTransaction,
+        initializeGameTransaction,
     } = useTransactions();
+
+    // =============================================================//
+    //                         Game State                           //
+    // =============================================================//
 
     const [gameOver, setGameOver] = useState<boolean>(false);
     const [gameError, setGameError] = useState<boolean>(false);
     const [gameErrorText, setGameErrorText] = useState<string>("");
     const [isAnimating, setIsAnimating] = useState<boolean>(false);
 
-    const [playedMovesCount, setPlayedMovesCount] = useState<number>(0);
-    const [encodedMoves, setEncodedMoves] = useState<bigint[]>([]);
     const [activeGameId, setActiveGameId] = useState<Hex>("0x");
+    const [encodedMoves, setEncodedMoves] = useState<bigint[]>([]);
+    const [playedMovesCount, setPlayedMovesCount] = useState<number>(0);
 
     const [boardState, setBoardState] = useState<BoardState>({
         tiles: [],
         score: 0,
     });
+
+    // =============================================================//
+    //                   Detect and execute moves                   //
+    // =============================================================//
 
     // Handle keyboard events
     useEffect(() => {
@@ -81,152 +95,6 @@ export default function Game2048() {
         window.addEventListener("keydown", handleKeyDown);
         return () => window.removeEventListener("keydown", handleKeyDown);
     }, [boardState, gameOver, isAnimating]);
-
-    // Initialize the game with two random tiles
-    const initializeGame = () => {
-        const newBoardState: BoardState = {
-            tiles: [],
-            score: 0,
-        };
-
-        // Add two random tiles
-        addRandomTile(newBoardState);
-        addRandomTile(newBoardState);
-
-        setPlayedMovesCount(1);
-        setActiveGameId(keccak256(toHex(Math.random().toString())));
-        setEncodedMoves([tilesToBigInt(newBoardState.tiles, 0)]);
-
-        setBoardState(newBoardState);
-        setGameOver(false);
-    };
-
-    // Resumes a game where it was left off
-    const resyncGame = async () => {
-        const newBoardState: BoardState = {
-            tiles: [],
-            score: boardState.score,
-        };
-
-        const latestBoard = await getLatestGameBoard(activeGameId);
-
-        let nonzero = false;
-        for (let i = 0; i < 4; i++) {
-            for (let j = 0; j < 4; j++) {
-                const value = latestBoard[4 * i + j];
-                if (value > 0) {
-                    nonzero = true;
-
-                    const newTile: Tile = {
-                        id: generateTileId(),
-                        value: 2 ** value,
-                        row: i,
-                        col: j,
-                        isNew: true,
-                    };
-
-                    newBoardState.tiles.push(newTile);
-                }
-            }
-        }
-
-        if (!nonzero) {
-            initializeGame();
-        } else {
-            setBoardState(newBoardState);
-            setGameErrorText("");
-            setGameError(false);
-        }
-    };
-
-    // Generate a unique ID for tiles
-    const generateTileId = () => {
-        return keccak256(toHex(Math.random().toString()));
-    };
-
-    // Add a random tile to the board (2 with 90% chance, 4 with 10% chance)
-    const addRandomTile = (boardState: BoardState) => {
-        const emptyCells = [];
-
-        // Find all empty cells
-        for (let row = 0; row < 4; row++) {
-            for (let col = 0; col < 4; col++) {
-                if (
-                    !boardState.tiles.some(
-                        (tile) => tile.row === row && tile.col === col
-                    )
-                ) {
-                    emptyCells.push({ row, col });
-                }
-            }
-        }
-
-        // If there are no empty cells, return
-        if (emptyCells.length === 0) return;
-
-        // Choose a random empty cell
-        const randomCell =
-            emptyCells[Math.floor(Math.random() * emptyCells.length)];
-
-        // Create a new tile
-        const newTile: Tile = {
-            id: generateTileId(),
-            value: Math.random() < 0.9 ? 2 : 4,
-            row: randomCell.row,
-            col: randomCell.col,
-            isNew: true,
-        };
-
-        boardState.tiles.push(newTile);
-    };
-
-    // Convert the tiles array to a 2D grid for easier processing
-    const getTilesGrid = (tiles: Tile[]): (Tile | null)[][] => {
-        const grid: (Tile | null)[][] = Array(4)
-            .fill(null)
-            .map(() => Array(4).fill(null));
-
-        tiles.forEach((tile) => {
-            grid[tile.row][tile.col] = tile;
-        });
-
-        return grid;
-    };
-
-    // Check if the game is over
-    const checkGameOver = (boardState: BoardState) => {
-        // If there are empty cells, the game is not over
-        if (boardState.tiles.length < 16) return false;
-
-        const grid = getTilesGrid(boardState.tiles);
-
-        // Check if there are any adjacent cells with the same value
-        for (let row = 0; row < 4; row++) {
-            for (let col = 0; col < 4; col++) {
-                const tile = grid[row][col];
-                if (tile) {
-                    // Check right
-                    if (
-                        col < 3 &&
-                        grid[row][col + 1] &&
-                        grid[row][col + 1]!.value === tile.value
-                    ) {
-                        return false;
-                    }
-                    // Check down
-                    if (
-                        row < 3 &&
-                        grid[row + 1][col] &&
-                        grid[row + 1][col]!.value === tile.value
-                    ) {
-                        return false;
-                    }
-                }
-            }
-        }
-
-        return true;
-    };
 
     // Move tiles in the specified direction
     const move = async (direction: Direction) => {
@@ -378,9 +246,163 @@ export default function Game2048() {
         }
     };
 
-    useEffect(() => {
-        console.log("Updated playedMovesCount: ", playedMovesCount);
-    }, [playedMovesCount]);
+    // =============================================================//
+    //                      Initialize new game                     //
+    // =============================================================//
+
+    // Initialize the game with two random tiles
+    const initializeGame = () => {
+        const newBoardState: BoardState = {
+            tiles: [],
+            score: 0,
+        };
+
+        // Add two random tiles
+        addRandomTile(newBoardState);
+        addRandomTile(newBoardState);
+
+        setPlayedMovesCount(1);
+        setActiveGameId(keccak256(toHex(Math.random().toString())));
+        setEncodedMoves([tilesToBigInt(newBoardState.tiles, 0)]);
+
+        setBoardState(newBoardState);
+        setGameOver(false);
+    };
+
+    // =============================================================//
+    //                      Re-sync ongoing game                    //
+    // =============================================================//
+
+    // Resumes a game where it was left off
+    const resyncGame = async () => {
+        const newBoardState: BoardState = {
+            tiles: [],
+            score: boardState.score,
+        };
+
+        const latestBoard = await getLatestGameBoard(activeGameId);
+
+        let nonzero = false;
+        for (let i = 0; i < 4; i++) {
+            for (let j = 0; j < 4; j++) {
+                const value = latestBoard[4 * i + j];
+                if (value > 0) {
+                    nonzero = true;
+
+                    const newTile: Tile = {
+                        id: generateTileId(),
+                        value: 2 ** value,
+                        row: i,
+                        col: j,
+                        isNew: true,
+                    };
+
+                    newBoardState.tiles.push(newTile);
+                }
+            }
+        }
+
+        if (!nonzero) {
+            initializeGame();
+        } else {
+            setBoardState(newBoardState);
+            setGameErrorText("");
+            setGameError(false);
+        }
+    };
+
+    // =============================================================//
+    //                      Board logic helpers                     //
+    // =============================================================//
+
+    // Generate a unique ID for tiles
+    const generateTileId = () => {
+        return keccak256(toHex(Math.random().toString()));
+    };
+
+    // Add a random tile to the board (2 with 90% chance, 4 with 10% chance)
+    const addRandomTile = (boardState: BoardState) => {
+        const emptyCells = [];
+
+        // Find all empty cells
+        for (let row = 0; row < 4; row++) {
+            for (let col = 0; col < 4; col++) {
+                if (
+                    !boardState.tiles.some(
+                        (tile) => tile.row === row && tile.col === col
+                    )
+                ) {
+                    emptyCells.push({ row, col });
+                }
+            }
+        }
+
+        // If there are no empty cells, return
+        if (emptyCells.length === 0) return;
+
+        // Choose a random empty cell
+        const randomCell =
+            emptyCells[Math.floor(Math.random() * emptyCells.length)];
+
+        // Create a new tile
+        const newTile: Tile = {
+            id: generateTileId(),
+            value: Math.random() < 0.9 ? 2 : 4,
+            row: randomCell.row,
+            col: randomCell.col,
+            isNew: true,
+        };
+
+        boardState.tiles.push(newTile);
+    };
+
+    // Convert the tiles array to a 2D grid for easier processing
+    const getTilesGrid = (tiles: Tile[]): (Tile | null)[][] => {
+        const grid: (Tile | null)[][] = Array(4)
+            .fill(null)
+            .map(() => Array(4).fill(null));
+
+        tiles.forEach((tile) => {
+            grid[tile.row][tile.col] = tile;
+        });
+
+        return grid;
+    };
+
+    // Check if the game is over
+    const checkGameOver = (boardState: BoardState) => {
+        // If there are empty cells, the game is not over
+        if (boardState.tiles.length < 16) return false;
+
+        const grid = getTilesGrid(boardState.tiles);
+
+        // Check if there are any adjacent cells with the same value
+        for (let row = 0; row < 4; row++) {
+            for (let col = 0; col < 4; col++) {
+                const tile = grid[row][col];
+                if (tile) {
+                    // Check right
+                    if (
+                        col < 3 &&
+                        grid[row][col + 1] &&
+                        grid[row][col + 1]!.value === tile.value
+                    ) {
+                        return false;
+                    }
+                    // Check down
+                    if (
+                        row < 3 &&
+                        grid[row + 1][col] &&
+                        grid[row + 1][col]!.value === tile.value
+                    ) {
+                        return false;
+                    }
+                }
+            }
+        }
+
+        return true;
+    };
 
     function tilesToBigInt(tiles: Tile[], direction: Direction): bigint {
         // Create a 16-element array initialized to 0
