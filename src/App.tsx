@@ -63,10 +63,39 @@ export default function Game2048() {
         tiles: [],
         score: 0,
     });
+    const [resetBoards, setResetBoards] = useState<BoardState[]>([]);
 
     // =============================================================//
     //                   Detect and execute moves                   //
     // =============================================================//
+
+    // Reset board on error.
+    useEffect(() => {
+        const boards = resetBoards;
+
+        if (boards.length > 0) {
+            const scores = boards.map((b) => b.score);
+            const idx = scores.indexOf(Math.min(...scores));
+
+            setBoardState(boards[idx]);
+        }
+    }, [resetBoards]);
+
+    function resetBoardOnError(
+        premoveBoard: BoardState,
+        currentMove: number,
+        error: Error
+    ) {
+        if (!gameError) {
+            setGameError(true);
+            setGameErrorText(error.message);
+
+            setResetBoards((current) => [...current, premoveBoard]);
+            setPlayedMovesCount(currentMove);
+
+            setIsAnimating(false);
+        }
+    }
 
     // Handle keyboard events
     useEffect(() => {
@@ -99,6 +128,7 @@ export default function Game2048() {
     // Move tiles in the specified direction
     const move = async (direction: Direction) => {
         const premoveBoard = boardState;
+        const currentMove = playedMovesCount;
 
         try {
             // Create a copy of the board state
@@ -180,9 +210,6 @@ export default function Game2048() {
                 // Pause moves
                 setIsAnimating(true);
 
-                // First update the state with the moved tiles
-                setBoardState(newBoardState);
-
                 // Create a new copy to avoid mutation issues
                 const updatedBoardState = {
                     tiles: [...newBoardState.tiles],
@@ -203,11 +230,8 @@ export default function Game2048() {
                         activeGameId,
                         newEncodedMoves
                     ).catch((error) => {
-                        console.error("Error in move function:", error);
-                        setBoardState(premoveBoard);
-                        setGameError(true);
-                        setGameErrorText((error as Error).message);
-                        setIsAnimating(false);
+                        console.error("Error in init transaction:", error);
+                        resetBoardOnError(premoveBoard, currentMove, error);
                     });
                 }
 
@@ -217,11 +241,8 @@ export default function Game2048() {
                         encodedBoard,
                         moveCount
                     ).catch((error) => {
-                        console.error("Error in move function:", error);
-                        setBoardState(premoveBoard);
-                        setGameError(true);
-                        setGameErrorText((error as Error).message);
-                        setIsAnimating(false);
+                        console.error("Error in move transaction:", error);
+                        resetBoardOnError(premoveBoard, currentMove, error);
                     });
                 }
 
@@ -235,14 +256,12 @@ export default function Game2048() {
                 }
 
                 // Resume moves
+                new Promise((resolve) => setTimeout(resolve, 20));
                 setIsAnimating(false);
             }
         } catch (error) {
-            console.error("Error in move function:", error);
-            setBoardState(premoveBoard);
-            setGameError(true);
-            setGameErrorText((error as Error).message);
-            setIsAnimating(false);
+            console.error("Error in move operation:", error);
+            resetBoardOnError(premoveBoard, currentMove, error as Error);
         }
     };
 
@@ -252,6 +271,8 @@ export default function Game2048() {
 
     // Initialize the game with two random tiles
     const initializeGame = () => {
+        setResetBoards([]);
+
         const newBoardState: BoardState = {
             tiles: [],
             score: 0,
@@ -266,6 +287,7 @@ export default function Game2048() {
         setEncodedMoves([tilesToBigInt(newBoardState.tiles, 0)]);
 
         setBoardState(newBoardState);
+        setGameError(false);
         setGameOver(false);
     };
 
@@ -302,6 +324,7 @@ export default function Game2048() {
             }
         }
 
+        setResetBoards([]);
         if (!nonzero) {
             initializeGame();
         } else {
