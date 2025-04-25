@@ -423,7 +423,7 @@ export default function Game2048() {
         const randomCell = emptyCells[index];
 
         // Choose random value.
-        const value = parseInt((seed % BigInt(100)).toString()) > 90 ? 2 : 1;
+        const value = parseInt((seed % BigInt(100)).toString()) > 90 ? 4 : 2;
 
         // Create a new tile
         const newTile: Tile = {
