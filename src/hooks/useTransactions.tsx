@@ -202,25 +202,28 @@ export function useTransactions() {
         gameId: Hex
     ): Promise<
         readonly [
-            number,
-            number,
-            number,
-            number,
-            number,
-            number,
-            number,
-            number,
-            number,
-            number,
-            number,
-            number,
-            number,
-            number,
-            number,
-            number
+            readonly [
+                number,
+                number,
+                number,
+                number,
+                number,
+                number,
+                number,
+                number,
+                number,
+                number,
+                number,
+                number,
+                number,
+                number,
+                number,
+                number
+            ],
+            bigint
         ]
     > {
-        const latestBoard = await publicClient.readContract({
+        const [latestBoard, nextMoveNumber] = await publicClient.readContract({
             address: GAME_CONTRACT_ADDRESS,
             abi: [
                 {
@@ -239,6 +242,11 @@ export function useTransactions() {
                             type: "uint8[16]",
                             internalType: "uint8[16]",
                         },
+                        {
+                            name: "nextMoveNumber",
+                            type: "uint256",
+                            internalType: "uint256",
+                        },
                     ],
                     stateMutability: "view",
                 },
@@ -247,7 +255,7 @@ export function useTransactions() {
             args: [gameId],
         });
 
-        return latestBoard;
+        return [latestBoard, nextMoveNumber];
     }
 
     // Initializes a game. Calls `prepareGame` and `startGame`.

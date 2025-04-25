@@ -342,7 +342,9 @@ export default function Game2048() {
             score: boardState.score,
         };
 
-        const latestBoard = await getLatestGameBoard(activeGameId);
+        const [latestBoard, nextMoveNumber] = await getLatestGameBoard(
+            activeGameId
+        );
 
         let nonzero = false;
         for (let i = 0; i < 4; i++) {
@@ -369,6 +371,7 @@ export default function Game2048() {
             initializeGame();
         } else {
             setBoardState(newBoardState);
+            setPlayedMovesCount(parseInt(nextMoveNumber.toString()));
             setGameErrorText("");
             setGameError(false);
         }
