@@ -11,7 +11,7 @@ import LoginButton from "./components/LoginButton";
 import NewGameButton from "./components/NewGameButton";
 
 // Utils
-import { Hex, keccak256, toHex } from "viem";
+import { encodePacked, Hex, hexToBigInt, keccak256, toHex } from "viem";
 
 // Types
 enum Direction {
@@ -215,7 +215,11 @@ export default function Game2048() {
                     tiles: [...newBoardState.tiles],
                     score: newBoardState.score,
                 };
-                addRandomTile(updatedBoardState);
+                addRandomTileViaSeed(
+                    updatedBoardState,
+                    activeGameId,
+                    currentMove
+                );
 
                 // Add move
                 const encodedBoard = tilesToBigInt(
@@ -291,6 +295,42 @@ export default function Game2048() {
         setGameOver(false);
     };
 
+    // Add a random tile to the board (2 with 90% chance, 4 with 10% chance)
+    const addRandomTile = (boardState: BoardState) => {
+        const emptyCells = [];
+
+        // Find all empty cells
+        for (let row = 0; row < 4; row++) {
+            for (let col = 0; col < 4; col++) {
+                if (
+                    !boardState.tiles.some(
+                        (tile) => tile.row === row && tile.col === col
+                    )
+                ) {
+                    emptyCells.push({ row, col });
+                }
+            }
+        }
+
+        // If there are no empty cells, return
+        if (emptyCells.length === 0) return;
+
+        // Choose a random empty cell
+        const randomCell =
+            emptyCells[Math.floor(Math.random() * emptyCells.length)];
+
+        // Create a new tile
+        const newTile: Tile = {
+            id: generateTileId(),
+            value: Math.random() < 0.9 ? 2 : 4,
+            row: randomCell.row,
+            col: randomCell.col,
+            isNew: true,
+        };
+
+        boardState.tiles.push(newTile);
+    };
+
     // =============================================================//
     //                      Re-sync ongoing game                    //
     // =============================================================//
@@ -344,7 +384,11 @@ export default function Game2048() {
     };
 
     // Add a random tile to the board (2 with 90% chance, 4 with 10% chance)
-    const addRandomTile = (boardState: BoardState) => {
+    const addRandomTileViaSeed = (
+        boardState: BoardState,
+        gameId: Hex,
+        moveNumber: number
+    ) => {
         const emptyCells = [];
 
         // Find all empty cells
@@ -364,13 +408,24 @@ export default function Game2048() {
         if (emptyCells.length === 0) return;
 
         // Choose a random empty cell
-        const randomCell =
-            emptyCells[Math.floor(Math.random() * emptyCells.length)];
+        const seed = hexToBigInt(
+            keccak256(
+                encodePacked(
+                    ["bytes32", "uint256"],
+                    [gameId, BigInt(moveNumber)]
+                )
+            )
+        );
+        const index = parseInt((seed % BigInt(emptyCells.length)).toString());
+        const randomCell = emptyCells[index];
+
+        // Choose random value.
+        const value = parseInt((seed % BigInt(100)).toString()) > 90 ? 2 : 1;
 
         // Create a new tile
         const newTile: Tile = {
             id: generateTileId(),
-            value: Math.random() < 0.9 ? 2 : 4,
+            value,
             row: randomCell.row,
             col: randomCell.col,
             isNew: true,
