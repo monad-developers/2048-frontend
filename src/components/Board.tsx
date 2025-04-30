@@ -1,3 +1,4 @@
+import { Loader2 } from "lucide-react";
 import FunPurpleButton from "./FunPurpleButton";
 
 type Tile = {
@@ -15,6 +16,7 @@ type BoardProps = {
     gameOver: boolean;
     gameError: boolean;
     gameErrorText: string;
+    disableBoard: boolean;
     resyncGame: () => void;
     initializeGame: () => void;
 };
@@ -25,6 +27,7 @@ export default function Board({
     gameOver,
     gameError,
     gameErrorText,
+    disableBoard,
     resyncGame,
     initializeGame,
 }: BoardProps) {
@@ -161,6 +164,14 @@ export default function Board({
                     </div>
                 )}
             </div>
+            {disableBoard && (
+                <div className="mt-6 text-center text-gray-600">
+                    <span className="flex items-center gap-2">
+                        <Loader2 className="w-5 h-5 animate-spin" />
+                        <span>Configuring game. Please wait.</span>
+                    </span>
+                </div>
+            )}
 
             <div className="mt-6 text-center text-gray-600">
                 <p className="mb-2">Use arrow keys to move the tiles.</p>

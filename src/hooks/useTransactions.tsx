@@ -12,8 +12,9 @@ import {
 } from "@/utils/constants";
 import { post } from "@/utils/fetch";
 import { usePrivy, useWallets } from "@privy-io/react-auth";
+import { useSmartWallets } from "@privy-io/react-auth/smart-wallets";
 import { ExternalLink } from "lucide-react";
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
 import {
     createWalletClient,
@@ -21,6 +22,7 @@ import {
     encodeFunctionData,
     Hex,
     toHex,
+    zeroAddress,
 } from "viem";
 import { monadTestnet } from "viem/chains";
 
@@ -54,14 +56,18 @@ async function withRetriesAndArgs<T>(
 export function useTransactions() {
     // User and Wallet objects.
     const { user } = usePrivy();
+    const { client } = useSmartWallets();
     const { ready, wallets } = useWallets();
 
     // Fetch and store smart wallet contract address, signer address and nonce on new login.
     const smartWalletNonce = useRef(0);
     const smartWalletAddress = useRef("");
     const smartWalletSignerAddress = useRef("");
+
+    const [disableTxs, setDisableTxs] = useState(false);
+
     useEffect(() => {
-        async function getNonce() {
+        async function setupSmartWallet() {
             if (!user || !user.wallet) {
                 return;
             }
@@ -74,48 +80,87 @@ export function useTransactions() {
                 return;
             }
 
-            const nonce = await publicClient.readContract({
-                address: ENTRYPOINT_V6_ADDRESS,
-                abi: [
-                    {
-                        type: "function",
-                        name: "getNonce",
-                        inputs: [
-                            {
-                                name: "sender",
-                                type: "address",
-                                internalType: "address",
-                            },
-                            {
-                                name: "key",
-                                type: "uint192",
-                                internalType: "uint192",
-                            },
-                        ],
-                        outputs: [
-                            {
-                                name: "nonce",
-                                type: "uint256",
-                                internalType: "uint256",
-                            },
-                        ],
-                        stateMutability: "view",
-                    },
-                ],
-                functionName: "getNonce",
-                args: [userSmartWallet.address as Hex, 0n],
-            });
+            if (!client) {
+                return;
+            }
 
-            console.log("Setting nonce: ", nonce.toString());
-            console.log("For smart wallet: ", userSmartWallet.address);
+            console.log("YO");
 
-            smartWalletNonce.current = parseInt(nonce.toString());
-            smartWalletAddress.current = userSmartWallet.address;
-            smartWalletSignerAddress.current = user.wallet.address;
+            setDisableTxs(true);
+
+            try {
+                const nonce = await publicClient.readContract({
+                    address: ENTRYPOINT_V6_ADDRESS,
+                    abi: [
+                        {
+                            type: "function",
+                            name: "getNonce",
+                            inputs: [
+                                {
+                                    name: "sender",
+                                    type: "address",
+                                    internalType: "address",
+                                },
+                                {
+                                    name: "key",
+                                    type: "uint192",
+                                    internalType: "uint192",
+                                },
+                            ],
+                            outputs: [
+                                {
+                                    name: "nonce",
+                                    type: "uint256",
+                                    internalType: "uint256",
+                                },
+                            ],
+                            stateMutability: "view",
+                        },
+                    ],
+                    functionName: "getNonce",
+                    args: [userSmartWallet.address as Hex, 0n],
+                });
+
+                console.log("Setting nonce: ", nonce.toString());
+                console.log("For smart wallet: ", userSmartWallet.address);
+                console.log(
+                    "Smart wallet type: ",
+                    userSmartWallet.smartWalletType
+                );
+
+                smartWalletNonce.current = parseInt(nonce.toString());
+                smartWalletAddress.current = userSmartWallet.address;
+                smartWalletSignerAddress.current = user.wallet.address;
+
+                const code = await publicClient.getCode({
+                    address: userSmartWallet.address as Hex,
+                });
+                if (!code || code === "0x") {
+                    smartWalletNonce.current += parseInt(nonce.toString()) + 1;
+
+                    try {
+                        console.log("Creating smart wallet...");
+                        console.log(client);
+                        const txHash = await client?.sendTransaction({
+                            to: zeroAddress,
+                        });
+                        console.log("Created wallet at tx: ", txHash);
+                    } catch (err) {
+                        smartWalletNonce.current -= 1;
+                    }
+                }
+            } catch (err) {
+                console.log("Failed to setup game: ", err);
+                toast.error(`Failed to setup game.`, {
+                    description: `Error: ${(err as Error).message}`,
+                });
+            }
+
+            setDisableTxs(false);
         }
 
-        getNonce();
-    }, [user]);
+        setupSmartWallet();
+    }, [user, client]);
 
     // Fetch and store provider on new login.
     const walletClient = useRef<any>(null);
@@ -312,39 +357,6 @@ export function useTransactions() {
         } catch (error) {
             e = error as Error;
 
-            const swNonce = await publicClient.readContract({
-                address: ENTRYPOINT_V6_ADDRESS,
-                abi: [
-                    {
-                        type: "function",
-                        name: "getNonce",
-                        inputs: [
-                            {
-                                name: "sender",
-                                type: "address",
-                                internalType: "address",
-                            },
-                            {
-                                name: "key",
-                                type: "uint192",
-                                internalType: "uint192",
-                            },
-                        ],
-                        outputs: [
-                            {
-                                name: "nonce",
-                                type: "uint256",
-                                internalType: "uint256",
-                            },
-                        ],
-                        stateMutability: "view",
-                    },
-                ],
-                functionName: "getNonce",
-                args: [smartWalletAddress.current as Hex, 0n],
-            });
-            smartWalletNonce.current = parseInt(swNonce.toString());
-
             toast.error(`Failed to send transaction.`, {
                 description: `Error: ${e.message}`,
             });
@@ -353,6 +365,44 @@ export function useTransactions() {
         if (e) {
             throw e;
         }
+    }
+
+    // Resets nonce.
+    async function resetNonce() {
+        console.log("Resetting nonce...");
+        const nonce = await publicClient.readContract({
+            address: ENTRYPOINT_V6_ADDRESS,
+            abi: [
+                {
+                    type: "function",
+                    name: "getNonce",
+                    inputs: [
+                        {
+                            name: "sender",
+                            type: "address",
+                            internalType: "address",
+                        },
+                        {
+                            name: "key",
+                            type: "uint192",
+                            internalType: "uint192",
+                        },
+                    ],
+                    outputs: [
+                        {
+                            name: "nonce",
+                            type: "uint256",
+                            internalType: "uint256",
+                        },
+                    ],
+                    stateMutability: "view",
+                },
+            ],
+            functionName: "getNonce",
+            args: [smartWalletAddress.current as Hex, 0n],
+        });
+        smartWalletNonce.current = parseInt(nonce.toString());
+        console.log("Reset nonce to: ", nonce.toString());
     }
 
     // Returns a the latest stored baord of a game as an array.
@@ -541,6 +591,8 @@ export function useTransactions() {
     }
 
     return {
+        disableTxs,
+        resetNonce,
         initializeGameTransaction,
         playNewMoveTransaction,
         getLatestGameBoard,

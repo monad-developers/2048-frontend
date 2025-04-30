@@ -41,6 +41,8 @@ export default function Game2048() {
     const { user } = usePrivy();
 
     const {
+        disableTxs,
+        resetNonce,
         getLatestGameBoard,
         playNewMoveTransaction,
         initializeGameTransaction,
@@ -127,6 +129,10 @@ export default function Game2048() {
 
     // Move tiles in the specified direction
     const move = async (direction: Direction) => {
+        if (disableTxs) {
+            return;
+        }
+
         const premoveBoard = boardState;
         const currentMove = playedMovesCount;
 
@@ -367,6 +373,7 @@ export default function Game2048() {
         }
 
         setResetBoards([]);
+
         if (!nonzero) {
             initializeGame();
         } else {
@@ -375,6 +382,8 @@ export default function Game2048() {
             setGameErrorText("");
             setGameError(false);
         }
+
+        await resetNonce();
     };
 
     // =============================================================//
@@ -615,6 +624,7 @@ export default function Game2048() {
             </div>
 
             <Board
+                disableBoard={disableTxs}
                 tiles={boardState.tiles}
                 score={boardState.score}
                 gameOver={gameOver}
