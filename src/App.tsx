@@ -56,6 +56,7 @@ export default function Game2048() {
     const [gameError, setGameError] = useState<boolean>(false);
     const [gameErrorText, setGameErrorText] = useState<string>("");
     const [isAnimating, setIsAnimating] = useState<boolean>(false);
+    const [disableBoard, setDisableBoard] = useState<boolean>(false);
 
     const [activeGameId, setActiveGameId] = useState<Hex>("0x");
     const [encodedMoves, setEncodedMoves] = useState<bigint[]>([]);
@@ -235,8 +236,10 @@ export default function Game2048() {
                 const newEncodedMoves = [...encodedMoves, encodedBoard];
                 const moveCount = playedMovesCount;
 
+                setBoardState(updatedBoardState);
+
                 if (moveCount == 3) {
-                    initializeGameTransaction(
+                    await initializeGameTransaction(
                         activeGameId,
                         newEncodedMoves
                     ).catch((error) => {
@@ -246,7 +249,7 @@ export default function Game2048() {
                 }
 
                 if (moveCount > 3) {
-                    playNewMoveTransaction(
+                    await playNewMoveTransaction(
                         activeGameId as Hex,
                         encodedBoard,
                         moveCount
@@ -256,17 +259,15 @@ export default function Game2048() {
                     });
                 }
 
-                setBoardState(updatedBoardState);
-                setEncodedMoves(newEncodedMoves);
-                setPlayedMovesCount(moveCount + 1);
-
                 // Check if the game is over
                 if (checkGameOver(updatedBoardState)) {
                     setGameOver(true);
                 }
 
+                setEncodedMoves(newEncodedMoves);
+                setPlayedMovesCount(moveCount + 1);
+
                 // Resume moves
-                new Promise((resolve) => setTimeout(resolve, 20));
                 setIsAnimating(false);
             }
         } catch (error) {
@@ -624,7 +625,7 @@ export default function Game2048() {
             </div>
 
             <Board
-                disableBoard={disableTxs}
+                disableBoard={disableTxs || isAnimating}
                 tiles={boardState.tiles}
                 score={boardState.score}
                 gameOver={gameOver}

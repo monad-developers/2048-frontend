@@ -168,7 +168,10 @@ export default function Board({
                 <div className="mt-6 text-center text-gray-600">
                     <span className="flex items-center gap-2">
                         <Loader2 className="w-5 h-5 animate-spin" />
-                        <span>Configuring game. Please wait.</span>
+                        <span>
+                            Please wait a little bit before playing another
+                            move!
+                        </span>
                     </span>
                 </div>
             )}
