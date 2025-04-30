@@ -186,186 +186,381 @@ export function useTransactions() {
         getWalletClient();
     }, [user, ready, wallets]);
 
-    // Sends a transaction and wait for receipt.
-    async function sendRawTransactionAndConfirm({
-        successText,
-        nonce,
-        callData,
-        callGasLimit,
-        preVerificationGas,
-        verificationGasLimit,
-    }: {
-        successText?: string;
-        nonce: number;
-        callData: Hex;
-        callGasLimit: bigint;
-        preVerificationGas: bigint;
-        verificationGasLimit: bigint;
-    }) {
-        let e: Error | null = null;
+    // Queue transactions and process them.
+    const [transactionQueue, setTransactionQueue] = useState<
+        {
+            id: number;
+            processed: boolean;
+            successText: string;
+            userOp: UserOperationRequest;
+        }[]
+    >([]);
 
-        try {
-            // Get provider.
-            const provider = walletClient.current;
+    const [transactionError, setTransactionError] = useState<Error | null>(
+        null
+    );
+    const [isProcessing, setIsProcessing] = useState(false);
 
-            // Sign and send transaction (userOp).
-            const startTime = Date.now();
-
-            // Construct userOp.
-            const userOp: UserOperationRequest = buildUserOp({
-                nonce,
-                callData,
-                callGasLimit,
-                preVerificationGas,
-                verificationGasLimit,
-                callTarget: GAME_CONTRACT_ADDRESS as Hex,
-                sender: smartWalletAddress.current as Hex,
-            });
-
-            // Get paymaster data (cannot hardcode; unique per op).
-            const getPaymasterDataResponse = await post({
-                url: import.meta.env.VITE_ALCHEMY_AA_RPC as string,
-                params: {
-                    jsonrpc: "2.0",
-                    id: nonce,
-                    method: "pm_getPaymasterData",
-                    params: [
-                        { ...userOp },
-                        ENTRYPOINT_V6_ADDRESS,
-                        toHex(monadTestnet.id),
-                        {
-                            policyId: import.meta.env.VITE_ALCHEMY_AA_POLICY_ID,
-                        },
-                    ],
-                },
-            });
-            if (getPaymasterDataResponse.error) {
-                console.log(
-                    "Paymaster data response: ",
-                    getPaymasterDataResponse
-                );
-                throw Error(`Failed to get paymaster data.`);
+    useEffect(() => {
+        async function processTransactionQueue() {
+            if (isProcessing || transactionQueue.length == 0) {
+                return;
             }
 
-            // Use paymaster data.
-            userOp.paymasterAndData =
-                getPaymasterDataResponse.result.paymasterAndData;
-
-            // Get userOp hash to sign.
-            const userOpHash = computeUserOpHash(
-                monadTestnet.id,
-                ENTRYPOINT_V6_ADDRESS,
-                userOp
+            const [itemToProcess] = [...transactionQueue].sort(
+                (a, b) => a.id - b.id
             );
 
-            // Sign userOp hash.
-            const signature = await provider.signMessage({
-                account: smartWalletSignerAddress.current,
-                message: { raw: userOpHash },
-            });
-            userOp.signature = signature;
+            console.log(
+                `[Queue] Found next item to process: ID ${itemToProcess.id}`
+            );
+            setIsProcessing(true);
+            setTransactionError(null);
 
-            // Send user operation.
-            const sendUserOperationResponse = await post({
-                url: import.meta.env.VITE_ALCHEMY_AA_RPC as string,
-                params: {
-                    jsonrpc: "2.0",
-                    id: nonce,
-                    method: "eth_sendUserOperation",
-                    params: [
-                        { ...userOp },
-                        "0x5FF137D4b0FDCD49DcA30c7CF57E578a026d2789",
-                    ],
-                },
-            });
-            if (sendUserOperationResponse.error) {
-                console.log(
-                    "Error sending user op: ",
-                    sendUserOperationResponse
+            let e: Error | null = null;
+
+            try {
+                const startTime = Date.now();
+
+                const provider = walletClient.current;
+
+                const nonce = itemToProcess.id;
+                const userOp = itemToProcess.userOp;
+                const successText = itemToProcess.successText;
+
+                // Get paymaster data (cannot hardcode; unique per op).
+                const getPaymasterDataResponse = await post({
+                    url: import.meta.env.VITE_ALCHEMY_AA_RPC as string,
+                    params: {
+                        jsonrpc: "2.0",
+                        id: nonce,
+                        method: "pm_getPaymasterData",
+                        params: [
+                            { ...userOp },
+                            ENTRYPOINT_V6_ADDRESS,
+                            toHex(monadTestnet.id),
+                            {
+                                policyId: import.meta.env
+                                    .VITE_ALCHEMY_AA_POLICY_ID,
+                            },
+                        ],
+                    },
+                });
+                if (getPaymasterDataResponse.error) {
+                    console.log(
+                        "Paymaster data response: ",
+                        getPaymasterDataResponse
+                    );
+                    throw Error(`Failed to get paymaster data.`);
+                }
+
+                // Use paymaster data.
+                userOp.paymasterAndData =
+                    getPaymasterDataResponse.result.paymasterAndData;
+
+                // Get userOp hash to sign.
+                const userOpHash = computeUserOpHash(
+                    monadTestnet.id,
+                    ENTRYPOINT_V6_ADDRESS,
+                    userOp
                 );
-                throw Error(`Failed to send userOp.`);
-            }
 
-            // Get sent userOp hash.
-            const time_userOpSent = Date.now() - startTime;
+                // Sign userOp hash.
+                const signature = await provider.signMessage({
+                    account: smartWalletSignerAddress.current,
+                    message: { raw: userOpHash },
+                });
+                userOp.signature = signature;
 
-            const userOpSentHash = sendUserOperationResponse.result;
-            console.log(
-                `Sent transaction in ${time_userOpSent} ms: `,
-                userOpSentHash
-            );
+                // Send user operation.
+                const sendUserOperationResponse = await post({
+                    url: import.meta.env.VITE_ALCHEMY_AA_RPC as string,
+                    params: {
+                        jsonrpc: "2.0",
+                        id: nonce,
+                        method: "eth_sendUserOperation",
+                        params: [{ ...userOp }, ENTRYPOINT_V6_ADDRESS],
+                    },
+                });
+                if (sendUserOperationResponse.error) {
+                    console.log(
+                        "Error sending user op: ",
+                        sendUserOperationResponse
+                    );
+                    throw Error(`Failed to send userOp.`);
+                }
 
-            // Fire toast success with benchmark.
-            console.log(`Transaction sent in ${time_userOpSent} ms`);
-            toast.success(`Sent user op.`, {
-                description: `${successText} Time: ${time_userOpSent} ms`,
-            });
+                // Get sent userOp hash.
+                const time_userOpSent = Date.now() - startTime;
 
-            // Wait for transaction confirmation
-            const transactionHash = await withRetriesAndArgs(
-                async (opHash: Hex) => {
-                    const getUserOperationReceiptResponse = await post({
-                        url: import.meta.env.VITE_ALCHEMY_AA_RPC as string,
-                        params: {
-                            jsonrpc: "2.0",
-                            id: 15,
-                            method: "eth_getUserOperationReceipt",
-                            params: [opHash],
-                        },
-                    });
+                const userOpSentHash = sendUserOperationResponse.result;
+                console.log(
+                    `Sent transaction in ${time_userOpSent} ms: `,
+                    userOpSentHash
+                );
 
-                    if (!getUserOperationReceiptResponse.result) {
-                        throw Error(`Failed to get tx.`);
-                    }
+                // Fire toast success with benchmark.
+                console.log(`Transaction sent in ${time_userOpSent} ms`);
+                toast.success(`Sent user op.`, {
+                    description: `${successText} Time: ${time_userOpSent} ms`,
+                });
 
-                    return getUserOperationReceiptResponse.result.receipt
-                        .transactionHash;
-                },
-                userOpHash,
-                "getUserOpTransactionHash"
-            );
-            const time_userOpConfirmed = Date.now() - startTime;
-            console.log(
-                `Confirmed transaction in ${time_userOpConfirmed} ms: `,
-                userOpSentHash
-            );
+                // Wait for transaction confirmation
+                const transactionHash = await withRetriesAndArgs(
+                    async (opHash: Hex) => {
+                        const getUserOperationReceiptResponse = await post({
+                            url: import.meta.env.VITE_ALCHEMY_AA_RPC as string,
+                            params: {
+                                jsonrpc: "2.0",
+                                id: 15,
+                                method: "eth_getUserOperationReceipt",
+                                params: [opHash],
+                            },
+                        });
 
-            // Fire toast success with benchmark and transaction hash.
-            console.log(
-                `Transaction sent in ${time_userOpConfirmed} ms: ${transactionHash}`
-            );
-            toast.success(`Confirmed transaction.`, {
-                description: `${successText} Time: ${time_userOpConfirmed} ms`,
-                action: (
-                    <Button
-                        className="outline outline-white"
-                        onClick={() =>
-                            window.open(
-                                `https://testnet.monadexplorer.com/tx/${transactionHash}`,
-                                "_blank",
-                                "noopener,noreferrer"
-                            )
+                        if (!getUserOperationReceiptResponse.result) {
+                            throw Error(`Failed to get tx.`);
                         }
-                    >
-                        <div className="flex items-center gap-1 p-1">
-                            <p>View</p>
-                            <ExternalLink className="w-4 h-4" />
-                        </div>
-                    </Button>
-                ),
-            });
-        } catch (error) {
-            e = error as Error;
 
-            toast.error(`Failed to send transaction.`, {
-                description: `Error: ${e.message}`,
-            });
+                        return getUserOperationReceiptResponse.result.receipt
+                            .transactionHash;
+                    },
+                    userOpHash,
+                    "getUserOpTransactionHash"
+                );
+                const time_userOpConfirmed = Date.now() - startTime;
+                console.log(
+                    `Confirmed transaction in ${time_userOpConfirmed} ms: `,
+                    userOpSentHash
+                );
+
+                // Fire toast success with benchmark and transaction hash.
+                console.log(
+                    `Transaction sent in ${time_userOpConfirmed} ms: ${transactionHash}`
+                );
+                toast.success(`Confirmed transaction.`, {
+                    description: `${successText} Time: ${time_userOpConfirmed} ms`,
+                    action: (
+                        <Button
+                            className="outline outline-white"
+                            onClick={() =>
+                                window.open(
+                                    `https://testnet.monadexplorer.com/tx/${transactionHash}`,
+                                    "_blank",
+                                    "noopener,noreferrer"
+                                )
+                            }
+                        >
+                            <div className="flex items-center gap-1 p-1">
+                                <p>View</p>
+                                <ExternalLink className="w-4 h-4" />
+                            </div>
+                        </Button>
+                    ),
+                });
+
+                setTransactionQueue((prevQueue) =>
+                    prevQueue.filter((item) => item.id !== itemToProcess.id)
+                );
+            } catch (error) {
+                e = error as Error;
+
+                toast.error(`Failed to send transaction.`, {
+                    description: `Error: ${e.message}`,
+                });
+            } finally {
+                setIsProcessing(false);
+                console.log("[Queue] Ready for next item.");
+            }
+
+            if (e) {
+                setTransactionError(e);
+            }
         }
 
-        if (e) {
-            throw e;
-        }
-    }
+        processTransactionQueue();
+    }, [transactionQueue]);
+
+    // // Sends a transaction and wait for receipt.
+    // async function sendRawTransactionAndConfirm({
+    //     successText,
+    //     nonce,
+    //     callData,
+    //     callGasLimit,
+    //     preVerificationGas,
+    //     verificationGasLimit,
+    // }: {
+    //     successText?: string;
+    //     nonce: number;
+    //     callData: Hex;
+    //     callGasLimit: bigint;
+    //     preVerificationGas: bigint;
+    //     verificationGasLimit: bigint;
+    // }) {
+    //     let e: Error | null = null;
+
+    //     try {
+    //         // Get provider.
+    //         const provider = walletClient.current;
+
+    //         // Sign and send transaction (userOp).
+    //         const startTime = Date.now();
+
+    //         // Construct userOp.
+    //         const userOp: UserOperationRequest = buildUserOp({
+    //             nonce,
+    //             callData,
+    //             callGasLimit,
+    //             preVerificationGas,
+    //             verificationGasLimit,
+    //             callTarget: GAME_CONTRACT_ADDRESS as Hex,
+    //             sender: smartWalletAddress.current as Hex,
+    //         });
+
+    //         // Get paymaster data (cannot hardcode; unique per op).
+    //         const getPaymasterDataResponse = await post({
+    //             url: import.meta.env.VITE_ALCHEMY_AA_RPC as string,
+    //             params: {
+    //                 jsonrpc: "2.0",
+    //                 id: nonce,
+    //                 method: "pm_getPaymasterData",
+    //                 params: [
+    //                     { ...userOp },
+    //                     ENTRYPOINT_V6_ADDRESS,
+    //                     toHex(monadTestnet.id),
+    //                     {
+    //                         policyId: import.meta.env.VITE_ALCHEMY_AA_POLICY_ID,
+    //                     },
+    //                 ],
+    //             },
+    //         });
+    //         if (getPaymasterDataResponse.error) {
+    //             console.log(
+    //                 "Paymaster data response: ",
+    //                 getPaymasterDataResponse
+    //             );
+    //             throw Error(`Failed to get paymaster data.`);
+    //         }
+
+    //         // Use paymaster data.
+    //         userOp.paymasterAndData =
+    //             getPaymasterDataResponse.result.paymasterAndData;
+
+    //         // Get userOp hash to sign.
+    //         const userOpHash = computeUserOpHash(
+    //             monadTestnet.id,
+    //             ENTRYPOINT_V6_ADDRESS,
+    //             userOp
+    //         );
+
+    //         // Sign userOp hash.
+    //         const signature = await provider.signMessage({
+    //             account: smartWalletSignerAddress.current,
+    //             message: { raw: userOpHash },
+    //         });
+    //         userOp.signature = signature;
+
+    //         // Send user operation.
+    //         const sendUserOperationResponse = await post({
+    //             url: import.meta.env.VITE_ALCHEMY_AA_RPC as string,
+    //             params: {
+    //                 jsonrpc: "2.0",
+    //                 id: nonce,
+    //                 method: "eth_sendUserOperation",
+    //                 params: [
+    //                     { ...userOp },
+    //                     "0x5FF137D4b0FDCD49DcA30c7CF57E578a026d2789",
+    //                 ],
+    //             },
+    //         });
+    //         if (sendUserOperationResponse.error) {
+    //             console.log(
+    //                 "Error sending user op: ",
+    //                 sendUserOperationResponse
+    //             );
+    //             throw Error(`Failed to send userOp.`);
+    //         }
+
+    //         // Get sent userOp hash.
+    //         const time_userOpSent = Date.now() - startTime;
+
+    //         const userOpSentHash = sendUserOperationResponse.result;
+    //         console.log(
+    //             `Sent transaction in ${time_userOpSent} ms: `,
+    //             userOpSentHash
+    //         );
+
+    //         // Fire toast success with benchmark.
+    //         console.log(`Transaction sent in ${time_userOpSent} ms`);
+    //         toast.success(`Sent user op.`, {
+    //             description: `${successText} Time: ${time_userOpSent} ms`,
+    //         });
+
+    //         // Wait for transaction confirmation
+    //         const transactionHash = await withRetriesAndArgs(
+    //             async (opHash: Hex) => {
+    //                 const getUserOperationReceiptResponse = await post({
+    //                     url: import.meta.env.VITE_ALCHEMY_AA_RPC as string,
+    //                     params: {
+    //                         jsonrpc: "2.0",
+    //                         id: 15,
+    //                         method: "eth_getUserOperationReceipt",
+    //                         params: [opHash],
+    //                     },
+    //                 });
+
+    //                 if (!getUserOperationReceiptResponse.result) {
+    //                     throw Error(`Failed to get tx.`);
+    //                 }
+
+    //                 return getUserOperationReceiptResponse.result.receipt
+    //                     .transactionHash;
+    //             },
+    //             userOpHash,
+    //             "getUserOpTransactionHash"
+    //         );
+    //         const time_userOpConfirmed = Date.now() - startTime;
+    //         console.log(
+    //             `Confirmed transaction in ${time_userOpConfirmed} ms: `,
+    //             userOpSentHash
+    //         );
+
+    //         // Fire toast success with benchmark and transaction hash.
+    //         console.log(
+    //             `Transaction sent in ${time_userOpConfirmed} ms: ${transactionHash}`
+    //         );
+    //         toast.success(`Confirmed transaction.`, {
+    //             description: `${successText} Time: ${time_userOpConfirmed} ms`,
+    //             action: (
+    //                 <Button
+    //                     className="outline outline-white"
+    //                     onClick={() =>
+    //                         window.open(
+    //                             `https://testnet.monadexplorer.com/tx/${transactionHash}`,
+    //                             "_blank",
+    //                             "noopener,noreferrer"
+    //                         )
+    //                     }
+    //                 >
+    //                     <div className="flex items-center gap-1 p-1">
+    //                         <p>View</p>
+    //                         <ExternalLink className="w-4 h-4" />
+    //                     </div>
+    //                 </Button>
+    //             ),
+    //         });
+    //     } catch (error) {
+    //         e = error as Error;
+
+    //         toast.error(`Failed to send transaction.`, {
+    //             description: `Error: ${e.message}`,
+    //         });
+    //     }
+
+    //     if (e) {
+    //         throw e;
+    //     }
+    // }
 
     // Resets nonce.
     async function resetNonce() {
@@ -466,10 +661,7 @@ export function useTransactions() {
         return [latestBoard, nextMoveNumber];
     }
 
-    async function initializeGameTransaction(
-        gameId: Hex,
-        moves: bigint[]
-    ): Promise<void> {
+    function initializeGameTransaction(gameId: Hex, moves: bigint[]) {
         if (moves.length < 4) {
             throw Error("Providing less than 4 moves to start the game.");
         }
@@ -498,17 +690,20 @@ export function useTransactions() {
         // Sign and send transaction: start game
         console.log("Starting game!");
 
+        // Get and update nonce.
         const nonce = smartWalletNonce.current;
         smartWalletNonce.current = nonce + 1;
 
-        await sendRawTransactionAndConfirm({
-            successText: "Started game!",
+        // Construct userOp.
+        const userOp: UserOperationRequest = buildUserOp({
             nonce,
             callGasLimit: UserOpConstants.gas.startGame.callGasLimit,
             preVerificationGas:
                 UserOpConstants.gas.startGame.preVerificationGas,
             verificationGasLimit:
                 UserOpConstants.gas.startGame.verificationGasLimit,
+            callTarget: GAME_CONTRACT_ADDRESS as Hex,
+            sender: smartWalletAddress.current as Hex,
             callData: encodeFunctionData({
                 abi: [
                     {
@@ -534,13 +729,24 @@ export function useTransactions() {
                 args: [gameId, game],
             }),
         });
+
+        // Add to queue.
+        setTransactionQueue((prev) => [
+            ...prev,
+            {
+                id: nonce,
+                processed: false,
+                successText: "Started game!",
+                userOp,
+            },
+        ]);
     }
 
-    async function playNewMoveTransaction(
+    function playNewMoveTransaction(
         gameId: Hex,
         move: bigint,
         moveCount: number
-    ): Promise<void> {
+    ) {
         if (!ready || !wallets) {
             throw Error("Logged in user not found.");
         }
@@ -556,13 +762,15 @@ export function useTransactions() {
         const nonce = smartWalletNonce.current;
         smartWalletNonce.current = nonce + 1;
 
-        await sendRawTransactionAndConfirm({
-            successText: `Played move ${moveCount}`,
+        // Construct userOp.
+        const userOp: UserOperationRequest = buildUserOp({
             nonce,
             callGasLimit: UserOpConstants.gas.playMove.callGasLimit,
             preVerificationGas: UserOpConstants.gas.playMove.preVerificationGas,
             verificationGasLimit:
                 UserOpConstants.gas.playMove.verificationGasLimit,
+            callTarget: GAME_CONTRACT_ADDRESS as Hex,
+            sender: smartWalletAddress.current as Hex,
             callData: encodeFunctionData({
                 abi: [
                     {
@@ -588,10 +796,23 @@ export function useTransactions() {
                 args: [gameId, move],
             }),
         });
+
+        // Add to queue.
+        setTransactionQueue((prev) => [
+            ...prev,
+            {
+                id: nonce,
+                processed: false,
+                successText: `Played move ${moveCount}`,
+                userOp,
+            },
+        ]);
     }
 
     return {
         disableTxs,
+        transactionError,
+        isProcessing,
         resetNonce,
         initializeGameTransaction,
         playNewMoveTransaction,

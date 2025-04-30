@@ -42,7 +42,9 @@ export default function Game2048() {
 
     const {
         disableTxs,
+        transactionError,
         resetNonce,
+        isProcessing,
         getLatestGameBoard,
         playNewMoveTransaction,
         initializeGameTransaction,
@@ -56,7 +58,6 @@ export default function Game2048() {
     const [gameError, setGameError] = useState<boolean>(false);
     const [gameErrorText, setGameErrorText] = useState<string>("");
     const [isAnimating, setIsAnimating] = useState<boolean>(false);
-    const [disableBoard, setDisableBoard] = useState<boolean>(false);
 
     const [activeGameId, setActiveGameId] = useState<Hex>("0x");
     const [encodedMoves, setEncodedMoves] = useState<bigint[]>([]);
@@ -129,7 +130,7 @@ export default function Game2048() {
     }, [boardState, gameOver, isAnimating]);
 
     // Move tiles in the specified direction
-    const move = async (direction: Direction) => {
+    const move = (direction: Direction) => {
         if (disableTxs) {
             return;
         }
@@ -239,24 +240,15 @@ export default function Game2048() {
                 setBoardState(updatedBoardState);
 
                 if (moveCount == 3) {
-                    await initializeGameTransaction(
-                        activeGameId,
-                        newEncodedMoves
-                    ).catch((error) => {
-                        console.error("Error in init transaction:", error);
-                        resetBoardOnError(premoveBoard, currentMove, error);
-                    });
+                    initializeGameTransaction(activeGameId, newEncodedMoves);
                 }
 
                 if (moveCount > 3) {
-                    await playNewMoveTransaction(
+                    playNewMoveTransaction(
                         activeGameId as Hex,
                         encodedBoard,
                         moveCount
-                    ).catch((error) => {
-                        console.error("Error in move transaction:", error);
-                        resetBoardOnError(premoveBoard, currentMove, error);
-                    });
+                    );
                 }
 
                 // Check if the game is over
@@ -629,8 +621,13 @@ export default function Game2048() {
                 tiles={boardState.tiles}
                 score={boardState.score}
                 gameOver={gameOver}
-                gameError={gameError}
-                gameErrorText={gameErrorText}
+                disclaimerText={
+                    isProcessing
+                        ? "Processing transactions. Please don't close the window."
+                        : ""
+                }
+                gameError={!!transactionError || gameError}
+                gameErrorText={transactionError?.message || gameErrorText}
                 resyncGame={resyncGame}
                 initializeGame={initializeGame}
             />

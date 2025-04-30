@@ -17,6 +17,7 @@ type BoardProps = {
     gameError: boolean;
     gameErrorText: string;
     disableBoard: boolean;
+    disclaimerText: string;
     resyncGame: () => void;
     initializeGame: () => void;
 };
@@ -28,6 +29,7 @@ export default function Board({
     gameError,
     gameErrorText,
     disableBoard,
+    disclaimerText,
     resyncGame,
     initializeGame,
 }: BoardProps) {
@@ -172,6 +174,15 @@ export default function Board({
                             Please wait a little bit before playing another
                             move!
                         </span>
+                    </span>
+                </div>
+            )}
+
+            {disclaimerText && (
+                <div className="mt-6 text-center text-green-500">
+                    <span className="flex items-center gap-2">
+                        <Loader2 className="w-5 h-5 animate-spin" />
+                        <span>{disclaimerText}</span>
                     </span>
                 </div>
             )}
