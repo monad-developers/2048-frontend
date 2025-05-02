@@ -9,12 +9,13 @@ import {
     AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import { Button } from "./ui/button";
-import { Copy, ExternalLink } from "lucide-react";
+import { Copy, ExternalLink, Loader2 } from "lucide-react";
 import { toast } from "sonner";
 import { useEffect, useState } from "react";
 import { usePrivy } from "@privy-io/react-auth";
 import { publicClient } from "@/utils/client";
 import { formatEther, Hex } from "viem";
+import { post } from "@/utils/fetch";
 
 export type FaucetDialogProps = {
     isOpen: boolean;
@@ -25,24 +26,79 @@ export function FaucetDialog({ isOpen, setIsOpen }: FaucetDialogProps) {
 
     const [address, setAddress] = useState("");
     const [balance, setBalance] = useState(0n);
+    const [loading, setLoading] = useState(false);
 
-    useEffect(() => {
-        async function setupUser() {
-            if (!user) {
-                return;
-            }
+    async function setupUser() {
+        if (!user) {
+            return;
+        }
 
-            if (!user.wallet) {
-                return;
-            }
+        if (!user.wallet) {
+            return;
+        }
 
-            const bal = await publicClient.getBalance({
-                address: user.wallet.address as Hex,
+        const bal = await publicClient.getBalance({
+            address: user.wallet.address as Hex,
+        });
+
+        setAddress(user.wallet.address);
+        setBalance(bal);
+    }
+
+    const handleFaucetRequest = async () => {
+        if (!user || !user.wallet) {
+            toast.error("Please log-in.");
+            return;
+        }
+
+        if (parseFloat(formatEther(balance)) >= 0.01) {
+            toast.error("Balance already more than 0.01 MON.");
+            return;
+        }
+
+        setLoading(true);
+
+        try {
+            const response = await post({
+                url: import.meta.env.VITE_2048_FAUCET_URL,
+                params: {
+                    address: user.wallet.address,
+                },
             });
 
-            setAddress(user.wallet.address);
-            setBalance(bal);
+            const transactionHash = response.txHash;
+            toast.success(`"Player funded!`, {
+                action: (
+                    <Button
+                        className="outline outline-white items-right"
+                        onClick={() =>
+                            window.open(
+                                `https://testnet.monadexplorer.com/tx/${transactionHash}`,
+                                "_blank",
+                                "noopener,noreferrer"
+                            )
+                        }
+                    >
+                        <div className="flex items-center gap-1 p-1">
+                            <p>View</p>
+                            <ExternalLink className="w-4 h-4" />
+                        </div>
+                    </Button>
+                ),
+            });
+
+            await setupUser();
+        } catch (e) {
+            console.log("Error fetching testnet MON: ", e);
+            toast.error(`Failed to send transaction.`, {
+                description: `Error: ${(e as Error).message}`,
+            });
         }
+
+        setLoading(false);
+    };
+
+    useEffect(() => {
         setupUser();
     }, [user, isOpen]);
 
@@ -60,57 +116,68 @@ export function FaucetDialog({ isOpen, setIsOpen }: FaucetDialogProps) {
                     <AlertDialogTitle className="text-black">
                         You need at least 0.1 MON to play a few moves.
                     </AlertDialogTitle>
-                    <AlertDialogDescription>
+                    {/*
+                      Add `asChild` to AlertDialogDescription.
+                      This prevents it from rendering its own <p> tag.
+                      Instead, it merges its props onto the direct child (the <div>).
+                      Now, the inner <div> elements are valid descendants of the outer <div>.
+                    */}
+                    <AlertDialogDescription asChild>
                         <div className="flex flex-col">
+                            {" "}
+                            {/* This div now receives props from AlertDialogDescription */}
                             <div className="flex items-center gap-2">
-                                <p className="text-purple-800">
+                                <div className="text-purple-800">
+                                    {" "}
+                                    {/* Keep inner elements as div */}
                                     <span className="text-gray-800">
                                         Player
                                     </span>
                                     : {address}
-                                </p>
+                                </div>
                                 <Button
                                     variant="ghost"
                                     size="icon"
                                     className="h-6 w-6 p-1"
                                     onClick={copyToClipboard}
+                                    aria-label="Copy player address"
                                 >
                                     <Copy className="h-4 w-4" />
                                 </Button>
                             </div>
-                            <p className="text-purple-800">
-                                <span className="text-gray-800">Balance</span>:{" "}
-                                {formatEther(balance)} MON
-                            </p>
-                            <p className="text-gray-800 my-2">
-                                Copy your player address and fund it with
-                                testnet MON. Then, re-sync and resume your game.
-                            </p>
+                            <div className="text-purple-800">
+                                {" "}
+                                {/* Keep inner elements as div */}
+                                <span className="text-gray-800">
+                                    Balance
+                                </span>: {formatEther(balance)} MON
+                            </div>
+                            <div className="text-gray-800 my-2">
+                                {" "}
+                                {/* Keep inner elements as div */}
+                                Fund your player address with testnet MON. Then,
+                                re-sync and resume your game.
+                            </div>
                         </div>
                     </AlertDialogDescription>
                 </AlertDialogHeader>
                 <AlertDialogFooter>
                     <AlertDialogCancel
                         onClick={() => setIsOpen(false)}
-                        className="bg-red-600 text-white"
+                        className="bg-red-600 text-white hover:bg-red-700"
                     >
                         Cancel
                     </AlertDialogCancel>
-                    <AlertDialogAction>
+                    <AlertDialogAction asChild>
                         <Button
-                            className="outline outline-white bg-purple-600 text-white"
-                            onClick={() =>
-                                window.open(
-                                    `https://faucet.monad.xyz`,
-                                    "_blank",
-                                    "noopener,noreferrer"
-                                )
-                            }
+                            className="outline outline-white bg-purple-600 text-white hover:bg-purple-700"
+                            onClick={handleFaucetRequest}
+                            disabled={loading}
                         >
-                            <div className="flex items-center gap-1 p-1">
-                                <p>Faucet</p>
-                                <ExternalLink className="w-4 h-4" />
-                            </div>
+                            {loading ? (
+                                <Loader2 className="w-5 h-5 animate-spin mr-2" />
+                            ) : null}
+                            {loading ? "Funding..." : "Fund"}
                         </Button>
                     </AlertDialogAction>
                 </AlertDialogFooter>
