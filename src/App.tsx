@@ -616,7 +616,7 @@ export default function Game2048() {
             <div className="flex items-center justify-between w-full max-w-md mb-4">
                 <Scorecard score={boardState.score} />
                 {!user ? (
-                    <LoginButton initFn={initializeGame} />
+                    <LoginButton />
                 ) : (
                     <NewGameButton resetGame={initializeGame} />
                 )}

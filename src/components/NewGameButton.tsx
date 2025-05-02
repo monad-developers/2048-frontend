@@ -1,5 +1,5 @@
 import { Copy } from "lucide-react";
-import { usePrivy } from "@privy-io/react-auth";
+import { useLogout, usePrivy } from "@privy-io/react-auth";
 import { Button } from "@/components/ui/button";
 import FunPurpleButton from "./FunPurpleButton";
 import { toast } from "sonner";
@@ -10,6 +10,7 @@ type NewGameButtonProps = {
 
 export default function NewGameButton({ resetGame }: NewGameButtonProps) {
     const { user } = usePrivy();
+    const { logout } = useLogout();
 
     const copyToClipboard = async () => {
         if (user?.wallet?.address) {
@@ -26,8 +27,11 @@ export default function NewGameButton({ resetGame }: NewGameButtonProps) {
 
     return (
         user?.wallet && (
-            <div className="flex flex-col items-center gap-4">
+            <div className="flex flex-col items-center">
                 <FunPurpleButton text="New Game" onClick={resetGame} />
+                <Button variant="ghost" className="underline" onClick={logout}>
+                    Logout
+                </Button>
                 <div className="flex items-center gap-2">
                     <p>
                         <span className="font-bold">Player</span>:{" "}
