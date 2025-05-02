@@ -24,20 +24,7 @@ export function useTransactions() {
     // Fetch user nonce on new login.
     const userNonce = useRef(0);
     useEffect(() => {
-        async function getNonce() {
-            if (!user || !user.wallet) {
-                return;
-            }
-
-            const nonce = await publicClient.getTransactionCount({
-                address: user.wallet.address as Hex,
-            });
-
-            console.log("Setting nonce: ", nonce);
-            userNonce.current = nonce;
-        }
-
-        getNonce();
+        resetNonce();
     }, [user]);
 
     // Fetch provider on new login.
@@ -63,6 +50,20 @@ export function useTransactions() {
 
         getWalletClient();
     }, [user, ready, wallets]);
+
+    // Resets nonce
+    async function resetNonce() {
+        if (!user || !user.wallet) {
+            return;
+        }
+
+        const nonce = await publicClient.getTransactionCount({
+            address: user.wallet.address as Hex,
+        });
+
+        console.log("Setting nonce: ", nonce);
+        userNonce.current = nonce;
+    }
 
     // Sends a transaction and wait for receipt.
     async function sendRawTransactionAndConfirm({
@@ -182,10 +183,7 @@ export function useTransactions() {
         } catch (error) {
             e = error as Error;
 
-            const nonce = await publicClient.getTransactionCount({
-                address: user?.wallet?.address as Hex,
-            });
-            userNonce.current = nonce;
+            await resetNonce();
 
             toast.error(`Failed to send transaction.`, {
                 description: `Error: ${e.message}`,
@@ -375,6 +373,7 @@ export function useTransactions() {
     }
 
     return {
+        resetNonce,
         initializeGameTransaction,
         playNewMoveTransaction,
         getLatestGameBoard,

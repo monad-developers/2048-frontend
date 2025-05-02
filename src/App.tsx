@@ -42,6 +42,7 @@ export default function Game2048() {
     const { user } = usePrivy();
 
     const {
+        resetNonce,
         getLatestGameBoard,
         playNewMoveTransaction,
         initializeGameTransaction,
@@ -376,6 +377,7 @@ export default function Game2048() {
         if (!nonzero) {
             initializeGame();
         } else {
+            await resetNonce();
             setBoardState(newBoardState);
             setPlayedMovesCount(parseInt(nextMoveNumber.toString()));
             setGameErrorText("");

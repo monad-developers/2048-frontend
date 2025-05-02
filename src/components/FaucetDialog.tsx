@@ -58,7 +58,7 @@ export function FaucetDialog({ isOpen, setIsOpen }: FaucetDialogProps) {
             <AlertDialogContent className="bg-yellow-600">
                 <AlertDialogHeader>
                     <AlertDialogTitle className="text-black">
-                        You need testnet MON to play the game.
+                        You need at least 0.1 MON to play a few moves.
                     </AlertDialogTitle>
                     <AlertDialogDescription>
                         <div className="flex flex-col">
