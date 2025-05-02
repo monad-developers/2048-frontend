@@ -56,7 +56,7 @@ export default function Game2048() {
     const [gameError, setGameError] = useState<boolean>(false);
     const [gameErrorText, setGameErrorText] = useState<string>("");
     const [isAnimating, setIsAnimating] = useState<boolean>(false);
-    const [faucetModalOpen, setFaucetModalOpen] = useState<boolean>(true);
+    const [faucetModalOpen, setFaucetModalOpen] = useState<boolean>(false);
 
     const [activeGameId, setActiveGameId] = useState<Hex>("0x");
     const [encodedMoves, setEncodedMoves] = useState<bigint[]>([]);

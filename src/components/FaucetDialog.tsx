@@ -9,7 +9,7 @@ import {
     AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import { Button } from "./ui/button";
-import { Copy, ExternalLink, Loader2 } from "lucide-react";
+import { Copy, Loader2 } from "lucide-react";
 import { toast } from "sonner";
 import { useEffect, useState } from "react";
 import { usePrivy } from "@privy-io/react-auth";
@@ -67,25 +67,9 @@ export function FaucetDialog({ isOpen, setIsOpen }: FaucetDialogProps) {
             });
 
             const transactionHash = response.txHash;
-            toast.success(`"Player funded!`, {
-                action: (
-                    <Button
-                        className="outline outline-white items-right"
-                        onClick={() =>
-                            window.open(
-                                `https://testnet.monadexplorer.com/tx/${transactionHash}`,
-                                "_blank",
-                                "noopener,noreferrer"
-                            )
-                        }
-                    >
-                        <div className="flex items-center gap-1 p-1">
-                            <p>View</p>
-                            <ExternalLink className="w-4 h-4" />
-                        </div>
-                    </Button>
-                ),
-            });
+            console.log("Funded tx: ", transactionHash);
+
+            toast.success(`"Player funded!`);
 
             await setupUser();
         } catch (e) {
@@ -172,7 +156,7 @@ export function FaucetDialog({ isOpen, setIsOpen }: FaucetDialogProps) {
                         <Button
                             className="outline outline-white bg-purple-600 text-white hover:bg-purple-700"
                             onClick={handleFaucetRequest}
-                            disabled={loading}
+                            // disabled={loading}
                         >
                             {loading ? (
                                 <Loader2 className="w-5 h-5 animate-spin mr-2" />
