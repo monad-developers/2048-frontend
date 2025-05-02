@@ -12,6 +12,7 @@ import NewGameButton from "./components/NewGameButton";
 
 // Utils
 import { encodePacked, Hex, hexToBigInt, keccak256, toHex } from "viem";
+import { FaucetDialog } from "./components/FaucetDialog";
 
 // Types
 enum Direction {
@@ -54,6 +55,7 @@ export default function Game2048() {
     const [gameError, setGameError] = useState<boolean>(false);
     const [gameErrorText, setGameErrorText] = useState<string>("");
     const [isAnimating, setIsAnimating] = useState<boolean>(false);
+    const [faucetModalOpen, setFaucetModalOpen] = useState<boolean>(true);
 
     const [activeGameId, setActiveGameId] = useState<Hex>("0x");
     const [encodedMoves, setEncodedMoves] = useState<bigint[]>([]);
@@ -94,6 +96,10 @@ export default function Game2048() {
             setPlayedMovesCount(currentMove);
 
             setIsAnimating(false);
+        }
+
+        if (error.message.includes("insufficient balance")) {
+            setFaucetModalOpen(true);
         }
     }
 
@@ -622,6 +628,11 @@ export default function Game2048() {
                 gameErrorText={gameErrorText}
                 resyncGame={resyncGame}
                 initializeGame={initializeGame}
+            />
+
+            <FaucetDialog
+                isOpen={faucetModalOpen}
+                setIsOpen={setFaucetModalOpen}
             />
         </Container>
     );

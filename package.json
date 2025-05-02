@@ -11,7 +11,8 @@
   },
   "dependencies": {
     "@privy-io/react-auth": "^2.8.2",
-    "@radix-ui/react-slot": "^1.1.2",
+    "@radix-ui/react-alert-dialog": "^1.1.11",
+    "@radix-ui/react-slot": "^1.2.0",
     "@tailwindcss/vite": "^4.0.17",
     "@types/node": "^22.13.14",
     "class-variance-authority": "^0.7.1",
