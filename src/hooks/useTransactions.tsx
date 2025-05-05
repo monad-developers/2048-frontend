@@ -98,8 +98,14 @@ export function useTransactions() {
                 maxPriorityFeePerGas,
             });
 
+            const environment = import.meta.env.VITE_APP_ENVIRONMENT;
+            const rpc =
+                environment === "prod"
+                    ? import.meta.env.VITE_MONAD_RPC_URL! ||
+                      monadTestnet.rpcUrls.default.http[0]
+                    : monadTestnet.rpcUrls.default.http[0];
             const response = await post({
-                url: monadTestnet.rpcUrls.default.http[0],
+                url: rpc,
                 params: {
                     id: 0,
                     jsonrpc: "2.0",
