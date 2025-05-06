@@ -11,7 +11,7 @@ Clone the repo and run the following to install dependencies:
 bun install
 ```
 
-Set the `VITE_PRIVY_APP_ID` environment variable in your `.env.local` file. Then run the following to run the game locally:
+Set the environment variables in your `.env.local` file (see `.env.local.example`). Then run the following to run the game locally:
 
 ```bash
 bun dev
