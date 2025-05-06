@@ -69,7 +69,7 @@ export function FaucetDialog({ isOpen, setIsOpen }: FaucetDialogProps) {
             const transactionHash = response.txHash;
             console.log("Funded tx: ", transactionHash);
 
-            toast.success(`"Player funded!`);
+            toast.success(`Player funded!`);
 
             await setupUser();
         } catch (e) {
