@@ -125,7 +125,7 @@ export default function Board({
 
                 {/* Game over overlay */}
                 {gameOver && (
-                    <div className="absolute inset-0 flex items-center justify-center bg-black bg-opacity-50 rounded-lg z-20">
+                    <div className="absolute inset-0 flex items-center justify-center rounded-lg z-20">
                         <div className="p-6 bg-white rounded-lg text-center">
                             <h2 className="text-2xl font-bold mb-4">
                                 Game Over!
@@ -141,7 +141,7 @@ export default function Board({
 
                 {/* Game error overlay */}
                 {gameError && (
-                    <div className="absolute inset-0 flex items-center justify-center bg-black bg-opacity-50 rounded-lg z-20">
+                    <div className="absolute inset-0 flex items-center justify-center rounded-lg z-20">
                         <div className="p-6 bg-white rounded-lg text-center">
                             <h2 className="text-2xl font-bold mb-4">
                                 Oops! Game Error :(

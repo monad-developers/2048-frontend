@@ -267,7 +267,7 @@ export default function Game2048() {
                 }
 
                 // Resume moves
-                new Promise((resolve) => setTimeout(resolve, 20));
+                await new Promise((resolve) => setTimeout(resolve, 150));
                 setIsAnimating(false);
             }
         } catch (error) {
@@ -633,6 +633,7 @@ export default function Game2048() {
             />
 
             <FaucetDialog
+                resyncGame={resyncGame}
                 isOpen={faucetModalOpen}
                 setIsOpen={setFaucetModalOpen}
             />
