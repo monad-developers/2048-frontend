@@ -10,7 +10,9 @@ import {
     createWalletClient,
     custom,
     encodeFunctionData,
+    formatEther,
     Hex,
+    parseEther,
     parseGwei,
 } from "viem";
 import { waitForTransactionReceipt } from "viem/actions";
@@ -23,8 +25,30 @@ export function useTransactions() {
 
     // Fetch user nonce on new login.
     const userNonce = useRef(0);
+    const userBalance = useRef(0n);
+
+    // Resets nonce and balance
+    async function resetNonceAndBalance() {
+        if (!user || !user.wallet) {
+            return;
+        }
+
+        const nonce = await publicClient.getTransactionCount({
+            address: user.wallet.address as Hex,
+        });
+        const balance = await publicClient.getBalance({
+            address: user.wallet.address as Hex,
+        });
+
+        console.log("Setting nonce: ", nonce);
+        console.log("Setting balance: ", balance.toString());
+
+        userNonce.current = nonce;
+        userBalance.current = balance;
+    }
+
     useEffect(() => {
-        resetNonce();
+        resetNonceAndBalance();
     }, [user]);
 
     // Fetch provider on new login.
@@ -50,20 +74,6 @@ export function useTransactions() {
 
         getWalletClient();
     }, [user, ready, wallets]);
-
-    // Resets nonce
-    async function resetNonce() {
-        if (!user || !user.wallet) {
-            return;
-        }
-
-        const nonce = await publicClient.getTransactionCount({
-            address: user.wallet.address as Hex,
-        });
-
-        console.log("Setting nonce: ", nonce);
-        userNonce.current = nonce;
-    }
 
     // Sends a transaction and wait for receipt.
     async function sendRawTransactionAndConfirm({
@@ -192,8 +202,6 @@ export function useTransactions() {
         } catch (error) {
             e = error as Error;
 
-            await resetNonce();
-
             toast.error(`Failed to send transaction.`, {
                 description: `Error: ${e.message}`,
             });
@@ -270,6 +278,11 @@ export function useTransactions() {
         gameId: Hex,
         moves: bigint[]
     ): Promise<void> {
+        const balance = userBalance.current;
+        if (parseFloat(formatEther(balance)) < 0.05) {
+            throw Error("Signer has insufficient balance.");
+        }
+
         if (moves.length < 4) {
             throw Error("Providing less than 4 moves to start the game.");
         }
@@ -291,6 +304,7 @@ export function useTransactions() {
 
         const nonce = userNonce.current;
         userNonce.current = nonce + 1;
+        userBalance.current = balance - parseEther("0.025");
 
         await sendRawTransactionAndConfirm({
             nonce: nonce,
@@ -331,8 +345,14 @@ export function useTransactions() {
         // Sign and send transaction: play move
         console.log(`Playing move ${moveCount}!`);
 
+        const balance = userBalance.current;
+        if (parseFloat(formatEther(balance)) < 0.05) {
+            throw Error("Signer has insufficient balance.");
+        }
+
         const nonce = userNonce.current;
         userNonce.current = nonce + 1;
+        userBalance.current = balance - parseEther("0.01");
 
         await sendRawTransactionAndConfirm({
             nonce,
@@ -366,7 +386,7 @@ export function useTransactions() {
     }
 
     return {
-        resetNonce,
+        resetNonceAndBalance,
         initializeGameTransaction,
         playNewMoveTransaction,
         getLatestGameBoard,
