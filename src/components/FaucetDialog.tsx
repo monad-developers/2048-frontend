@@ -9,7 +9,7 @@ import {
     AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import { Button } from "./ui/button";
-import { Copy, Loader2 } from "lucide-react";
+import { Copy, ExternalLinkIcon, Loader2 } from "lucide-react";
 import { toast } from "sonner";
 import { useEffect, useState } from "react";
 import { usePrivy } from "@privy-io/react-auth";
@@ -19,9 +19,14 @@ import { post } from "@/utils/fetch";
 
 export type FaucetDialogProps = {
     isOpen: boolean;
+    resyncGame: () => Promise<void>;
     setIsOpen: (open: boolean) => void;
 };
-export function FaucetDialog({ isOpen, setIsOpen }: FaucetDialogProps) {
+export function FaucetDialog({
+    isOpen,
+    setIsOpen,
+    resyncGame,
+}: FaucetDialogProps) {
     const { user } = usePrivy();
 
     const [address, setAddress] = useState("");
@@ -45,14 +50,19 @@ export function FaucetDialog({ isOpen, setIsOpen }: FaucetDialogProps) {
         setBalance(bal);
     }
 
+    const handleClose = async () => {
+        await resyncGame();
+        setIsOpen(false);
+    };
+
     const handleFaucetRequest = async () => {
         if (!user || !user.wallet) {
             toast.error("Please log-in.");
             return;
         }
 
-        if (parseFloat(formatEther(balance)) >= 0.01) {
-            toast.error("Balance already more than 0.01 MON.");
+        if (parseFloat(formatEther(balance)) >= 0.5) {
+            toast.error("Balance already more than 0.5 MON.");
             return;
         }
 
@@ -83,6 +93,11 @@ export function FaucetDialog({ isOpen, setIsOpen }: FaucetDialogProps) {
     };
 
     useEffect(() => {
+        if (!isOpen) return;
+        handleFaucetRequest();
+    }, [user, isOpen]);
+
+    useEffect(() => {
         setupUser();
     }, [user, isOpen]);
 
@@ -92,6 +107,8 @@ export function FaucetDialog({ isOpen, setIsOpen }: FaucetDialogProps) {
             toast.info("Copied to clipboard.");
         }
     };
+
+    const alreadyFunded = parseFloat(formatEther(balance)) >= 0.5;
 
     return (
         <AlertDialog open={isOpen}>
@@ -114,7 +131,7 @@ export function FaucetDialog({ isOpen, setIsOpen }: FaucetDialogProps) {
                                 <div className="text-purple-800">
                                     {" "}
                                     {/* Keep inner elements as div */}
-                                    <span className="text-gray-800">
+                                    <span className="text-gray-800 font-bold">
                                         Player
                                     </span>
                                     : {address}
@@ -132,36 +149,50 @@ export function FaucetDialog({ isOpen, setIsOpen }: FaucetDialogProps) {
                             <div className="text-purple-800">
                                 {" "}
                                 {/* Keep inner elements as div */}
-                                <span className="text-gray-800">
+                                <span className="text-gray-800 font-bold">
                                     Balance
-                                </span>: {formatEther(balance)} MON
+                                </span>
+                                : {formatEther(balance)} MON
                             </div>
                             <div className="text-gray-800 my-2">
                                 {" "}
                                 {/* Keep inner elements as div */}
-                                Fund your player address with testnet MON. Then,
-                                re-sync and resume your game.
+                                Fund your player address with testnet MON
+                                directly via your external wallet, or get 0.5
+                                MON from the game faucet.
                             </div>
                         </div>
                     </AlertDialogDescription>
                 </AlertDialogHeader>
                 <AlertDialogFooter>
                     <AlertDialogCancel
-                        onClick={() => setIsOpen(false)}
-                        className="bg-red-600 text-white hover:bg-red-700"
+                        disabled={!alreadyFunded}
+                        onClick={handleClose}
+                        className="bg-blue-500 text-white hover:bg-blue-600"
                     >
-                        Cancel
+                        Resume
                     </AlertDialogCancel>
                     <AlertDialogAction asChild>
                         <Button
                             className="outline outline-white bg-purple-600 text-white hover:bg-purple-700"
                             onClick={handleFaucetRequest}
-                            // disabled={loading}
+                            disabled={loading || alreadyFunded}
                         >
                             {loading ? (
                                 <Loader2 className="w-5 h-5 animate-spin mr-2" />
                             ) : null}
-                            {loading ? "Funding..." : "Fund"}
+                            {loading ? (
+                                "Funding..."
+                            ) : (
+                                <div className="flex gap-2">
+                                    {alreadyFunded ? (
+                                        <p>Already funded</p>
+                                    ) : (
+                                        <p>Fund via game faucet</p>
+                                    )}
+                                    <ExternalLinkIcon />
+                                </div>
+                            )}
                         </Button>
                     </AlertDialogAction>
                 </AlertDialogFooter>

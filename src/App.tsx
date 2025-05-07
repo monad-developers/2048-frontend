@@ -633,6 +633,7 @@ export default function Game2048() {
             />
 
             <FaucetDialog
+                resyncGame={resyncGame}
                 isOpen={faucetModalOpen}
                 setIsOpen={setFaucetModalOpen}
             />
