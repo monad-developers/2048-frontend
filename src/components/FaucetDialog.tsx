@@ -98,6 +98,7 @@ export function FaucetDialog({
     }, [user, isOpen]);
 
     useEffect(() => {
+        if (!isOpen) return;
         setupUser();
     }, [user, isOpen]);
 
