@@ -8,7 +8,6 @@ import Board from "./components/Board";
 import Container from "./components/Container";
 import Scorecard from "./components/Scorecard";
 import LoginButton from "./components/LoginButton";
-import NewGameButton from "./components/NewGameButton";
 
 // Utils
 import { encodePacked, Hex, hexToBigInt, keccak256, toHex } from "viem";
@@ -615,11 +614,7 @@ export default function Game2048() {
         <Container>
             <div className="flex items-center justify-between w-full max-w-md mb-4">
                 <Scorecard score={boardState.score} />
-                {!user ? (
-                    <LoginButton />
-                ) : (
-                    <NewGameButton resetGame={initializeGame} />
-                )}
+                <LoginButton resetGame={initializeGame} />
             </div>
 
             <Board
