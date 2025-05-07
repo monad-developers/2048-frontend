@@ -373,10 +373,10 @@ export default function Game2048() {
         }
 
         setResetBoards([]);
+        await resetNonceAndBalance();
         if (!nonzero) {
             initializeGame();
         } else {
-            await resetNonceAndBalance();
             setBoardState(newBoardState);
             setPlayedMovesCount(parseInt(nextMoveNumber.toString()));
             setGameErrorText("");
