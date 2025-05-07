@@ -86,6 +86,9 @@ export function useTransactions() {
         try {
             // Sign and send transaction.
             const provider = walletClient.current;
+            if (!provider) {
+                throw Error("Wallet not found.");
+            }
 
             const startTime = Date.now();
             const signedTransaction = await provider.signTransaction({
@@ -275,15 +278,6 @@ export function useTransactions() {
             throw Error("Providing more than 4 moves to start the game.");
         }
 
-        if (!ready || !wallets) {
-            throw Error("Logged in user not found.");
-        }
-
-        const userWallet = wallets.find((w) => w.walletClientType == "privy");
-        if (!userWallet) {
-            throw Error("Wallet not found.");
-        }
-
         // Prepare the start position + first 3 moves of the game, and the hash of these boards.
         const game = [moves[0], moves[1], moves[2], moves[3]] as readonly [
             bigint,
@@ -294,6 +288,7 @@ export function useTransactions() {
 
         // Sign and send transaction: start game
         console.log("Starting game!");
+
         const nonce = userNonce.current;
         userNonce.current = nonce + 1;
 
@@ -333,17 +328,9 @@ export function useTransactions() {
         move: bigint,
         moveCount: number
     ): Promise<void> {
-        if (!ready || !wallets) {
-            throw Error("Logged in user not found.");
-        }
-
-        const userWallet = wallets.find((w) => w.walletClientType == "privy");
-        if (!userWallet) {
-            throw Error("Wallet not found.");
-        }
-
         // Sign and send transaction: play move
         console.log(`Playing move ${moveCount}!`);
+
         const nonce = userNonce.current;
         userNonce.current = nonce + 1;
 
