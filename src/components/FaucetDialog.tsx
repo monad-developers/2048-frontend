@@ -118,16 +118,9 @@ export function FaucetDialog({
                     <AlertDialogTitle className="text-black">
                         You need at least 0.1 MON to play a few moves.
                     </AlertDialogTitle>
-                    {/*
-                      Add `asChild` to AlertDialogDescription.
-                      This prevents it from rendering its own <p> tag.
-                      Instead, it merges its props onto the direct child (the <div>).
-                      Now, the inner <div> elements are valid descendants of the outer <div>.
-                    */}
                     <AlertDialogDescription asChild>
                         <div className="flex flex-col">
                             {" "}
-                            {/* This div now receives props from AlertDialogDescription */}
                             <div className="flex items-center gap-2">
                                 <div className="text-purple-800">
                                     {" "}
@@ -149,7 +142,6 @@ export function FaucetDialog({
                             </div>
                             <div className="text-purple-800">
                                 {" "}
-                                {/* Keep inner elements as div */}
                                 <span className="text-gray-800 font-bold">
                                     Balance
                                 </span>
@@ -157,7 +149,6 @@ export function FaucetDialog({
                             </div>
                             <div className="text-gray-800 my-2">
                                 {" "}
-                                {/* Keep inner elements as div */}
                                 Fund your player address with testnet MON
                                 directly via your external wallet, or get 0.5
                                 MON from the game faucet.
