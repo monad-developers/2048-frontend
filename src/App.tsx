@@ -1,5 +1,5 @@
 // Hooks
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { usePrivy } from "@privy-io/react-auth";
 import { useTransactions } from "./hooks/useTransactions";
 
@@ -115,13 +115,15 @@ export default function Game2048() {
         }
     }
 
-    // Handle keyboard events
-    useEffect(() => {
-        const handleKeyDown = async (event: KeyboardEvent) => {
-            // Must sign in.
-            if (!user) return;
+    // Handle keyboard / swipe events
+    const gameContainerRef = useRef<HTMLDivElement>(null);
 
-            if (gameOver || isAnimating) return;
+    useEffect(() => {
+        const container = gameContainerRef.current;
+        if (!container) return;
+
+        const handleKeyDown = async (event: KeyboardEvent) => {
+            if (!user || gameOver || isAnimating) return;
 
             switch (event.key) {
                 case "ArrowUp":
@@ -139,8 +141,47 @@ export default function Game2048() {
             }
         };
 
+        let touchStartX = 0;
+        let touchStartY = 0;
+
+        const handleTouchStart = (e: TouchEvent) => {
+            e.preventDefault(); // 👈 this is key to prevent scroll
+            touchStartX = e.changedTouches[0].screenX;
+            touchStartY = e.changedTouches[0].screenY;
+        };
+
+        const handleTouchEnd = async (e: TouchEvent) => {
+            e.preventDefault(); // 👈 also here
+            if (!user || gameOver || isAnimating) return;
+
+            const touchEndX = e.changedTouches[0].screenX;
+            const touchEndY = e.changedTouches[0].screenY;
+
+            const dx = touchEndX - touchStartX;
+            const dy = touchEndY - touchStartY;
+
+            if (Math.abs(dx) > Math.abs(dy)) {
+                if (dx > 50) await move(Direction.RIGHT);
+                else if (dx < -50) await move(Direction.LEFT);
+            } else {
+                if (dy > 50) await move(Direction.DOWN);
+                else if (dy < -50) await move(Direction.UP);
+            }
+        };
+
         window.addEventListener("keydown", handleKeyDown);
-        return () => window.removeEventListener("keydown", handleKeyDown);
+        container.addEventListener("touchstart", handleTouchStart, {
+            passive: false,
+        }); // 👈 passive: false is REQUIRED
+        container.addEventListener("touchend", handleTouchEnd, {
+            passive: false,
+        });
+
+        return () => {
+            window.removeEventListener("keydown", handleKeyDown);
+            container.removeEventListener("touchstart", handleTouchStart);
+            container.removeEventListener("touchend", handleTouchEnd);
+        };
     }, [boardState, gameOver, isAnimating]);
 
     // Move tiles in the specified direction
@@ -662,6 +703,7 @@ export default function Game2048() {
             </div>
 
             <Board
+                containerRef={gameContainerRef}
                 tiles={boardState.tiles}
                 score={boardState.score}
                 gameOver={gameOver}
