@@ -697,7 +697,7 @@ export default function Game2048() {
 
     return (
         <Container>
-            <div className="flex flex-col flex-1 overflow-hidden">
+            <div className="flex flex-col flex-1">
                 <div className="flex items-center justify-between w-full max-w-md mx-auto mb-2 p-4">
                     <Scorecard score={boardState.score} />
                     <LoginButton resetGame={initializeGame} />
