@@ -6,7 +6,7 @@ type ContainerProps = {
 
 export default function Container({ children }: ContainerProps) {
     return (
-        <div className="flex flex-col items-center justify-center min-h-screen p-4 bg-gray-100">
+        <div className="flex min-h-screen overflow-hidden flex-col items-center justify-center gap-y-3 px-2 bg-gray-100">
             <h1 className=" text-8xl font-extrabold text-yellow-400 drop-shadow-[4px_4px_0px_rgba(255,0,0,1)] md:drop-shadow-[8px_8px_0px_rgba(255,0,0,1)] uppercase tracking-wider transform rotate-[-2deg]">
                 2048
             </h1>
