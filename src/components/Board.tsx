@@ -10,6 +10,7 @@ type Tile = {
 };
 
 type BoardProps = {
+    containerRef: any;
     score: number;
     tiles: Tile[];
     gameOver: boolean;
@@ -20,6 +21,7 @@ type BoardProps = {
 };
 
 export default function Board({
+    containerRef,
     tiles,
     score,
     gameOver,
@@ -77,7 +79,10 @@ export default function Board({
 
     return (
         <>
-            <div className="relative bg-gray-300 rounded-lg p-2 w-full max-w-md aspect-square">
+            <div
+                ref={containerRef}
+                className="relative bg-gray-300 rounded-lg p-2 w-full max-w-md aspect-square"
+            >
                 {/* Grid background */}
                 <div className="grid grid-cols-4 grid-rows-4 gap-2 h-full w-full">
                     {Array(16)
