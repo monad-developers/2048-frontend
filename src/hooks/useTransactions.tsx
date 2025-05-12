@@ -276,40 +276,25 @@ export function useTransactions() {
     // Initializes a game. Calls `prepareGame` and `startGame`.
     async function initializeGameTransaction(
         gameId: Hex,
-        moves: bigint[]
+        boards: readonly [bigint, bigint, bigint, bigint],
+        moves: readonly [number, number, number]
     ): Promise<void> {
         const balance = userBalance.current;
-        if (parseFloat(formatEther(balance)) < 0.05) {
+        if (parseFloat(formatEther(balance)) < 0.01) {
             throw Error("Signer has insufficient balance.");
         }
-
-        if (moves.length < 4) {
-            throw Error("Providing less than 4 moves to start the game.");
-        }
-
-        if (moves.length > 4) {
-            throw Error("Providing more than 4 moves to start the game.");
-        }
-
-        // Prepare the start position + first 3 moves of the game, and the hash of these boards.
-        const game = [moves[0], moves[1], moves[2], moves[3]] as readonly [
-            bigint,
-            bigint,
-            bigint,
-            bigint
-        ];
 
         // Sign and send transaction: start game
         console.log("Starting game!");
 
         const nonce = userNonce.current;
         userNonce.current = nonce + 1;
-        userBalance.current = balance - parseEther("0.025");
+        userBalance.current = balance - parseEther("0.0075");
 
         await sendRawTransactionAndConfirm({
             nonce: nonce,
             successText: "Started game!",
-            gas: BigInt(500_000),
+            gas: BigInt(150_000),
             data: encodeFunctionData({
                 abi: [
                     {
@@ -322,9 +307,14 @@ export function useTransactions() {
                                 internalType: "bytes32",
                             },
                             {
-                                name: "game",
-                                type: "uint256[4]",
-                                internalType: "uint256[4]",
+                                name: "boards",
+                                type: "uint128[4]",
+                                internalType: "uint128[4]",
+                            },
+                            {
+                                name: "moves",
+                                type: "uint8[3]",
+                                internalType: "uint8[3]",
                             },
                         ],
                         outputs: [],
@@ -332,32 +322,33 @@ export function useTransactions() {
                     },
                 ],
                 functionName: "startGame",
-                args: [gameId, game],
+                args: [gameId, boards, moves],
             }),
         });
     }
 
     async function playNewMoveTransaction(
         gameId: Hex,
-        move: bigint,
+        board: bigint,
+        move: number,
         moveCount: number
     ): Promise<void> {
         // Sign and send transaction: play move
         console.log(`Playing move ${moveCount}!`);
 
         const balance = userBalance.current;
-        if (parseFloat(formatEther(balance)) < 0.05) {
+        if (parseFloat(formatEther(balance)) < 0.01) {
             throw Error("Signer has insufficient balance.");
         }
 
         const nonce = userNonce.current;
         userNonce.current = nonce + 1;
-        userBalance.current = balance - parseEther("0.01");
+        userBalance.current = balance - parseEther("0.005");
 
         await sendRawTransactionAndConfirm({
             nonce,
             successText: `Played move ${moveCount}`,
-            gas: BigInt(200_000),
+            gas: BigInt(100_000),
             data: encodeFunctionData({
                 abi: [
                     {
@@ -370,9 +361,14 @@ export function useTransactions() {
                                 internalType: "bytes32",
                             },
                             {
+                                name: "move",
+                                type: "uint8",
+                                internalType: "uint8",
+                            },
+                            {
                                 name: "resultBoard",
-                                type: "uint256",
-                                internalType: "uint256",
+                                type: "uint128",
+                                internalType: "uint128",
                             },
                         ],
                         outputs: [],
@@ -380,7 +376,7 @@ export function useTransactions() {
                     },
                 ],
                 functionName: "play",
-                args: [gameId, move],
+                args: [gameId, move, board],
             }),
         });
     }

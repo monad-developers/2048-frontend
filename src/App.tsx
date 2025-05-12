@@ -10,7 +10,15 @@ import Scorecard from "./components/Scorecard";
 import LoginButton from "./components/LoginButton";
 
 // Utils
-import { encodePacked, Hex, hexToBigInt, keccak256, toHex } from "viem";
+import {
+    encodePacked,
+    Hex,
+    hexToBigInt,
+    isAddress,
+    keccak256,
+    toBytes,
+    toHex,
+} from "viem";
 import { FaucetDialog } from "./components/FaucetDialog";
 
 // Types
@@ -27,6 +35,10 @@ type Tile = {
     col: number;
     mergedFrom?: string[];
     isNew?: boolean;
+};
+type EncodedMove = {
+    board: bigint; // 128 bits
+    move: number; // 8 bits
 };
 type BoardState = {
     tiles: Tile[];
@@ -58,7 +70,7 @@ export default function Game2048() {
     const [faucetModalOpen, setFaucetModalOpen] = useState<boolean>(false);
 
     const [activeGameId, setActiveGameId] = useState<Hex>("0x");
-    const [encodedMoves, setEncodedMoves] = useState<bigint[]>([]);
+    const [encodedMoves, setEncodedMoves] = useState<EncodedMove[]>([]);
     const [playedMovesCount, setPlayedMovesCount] = useState<number>(0);
 
     const [boardState, setBoardState] = useState<BoardState>({
@@ -228,17 +240,31 @@ export default function Game2048() {
                 );
 
                 // Add move
-                const encodedBoard = tilesToBigInt(
+                const encoded = tilesToEncodedMove(
                     updatedBoardState.tiles,
                     direction
                 );
-                const newEncodedMoves = [...encodedMoves, encodedBoard];
+                const newEncodedMoves = [...encodedMoves, encoded];
                 const moveCount = playedMovesCount;
 
                 if (moveCount == 3) {
+                    const boards = [
+                        newEncodedMoves[0].board,
+                        newEncodedMoves[1].board,
+                        newEncodedMoves[2].board,
+                        newEncodedMoves[3].board,
+                    ] as readonly [bigint, bigint, bigint, bigint];
+
+                    const moves = [
+                        newEncodedMoves[1].move,
+                        newEncodedMoves[2].move,
+                        newEncodedMoves[3].move,
+                    ] as readonly [number, number, number];
+
                     initializeGameTransaction(
                         activeGameId,
-                        newEncodedMoves
+                        boards,
+                        moves
                     ).catch((error) => {
                         console.error("Error in init transaction:", error);
                         resetBoardOnError(premoveBoard, currentMove, error);
@@ -248,7 +274,8 @@ export default function Game2048() {
                 if (moveCount > 3) {
                     playNewMoveTransaction(
                         activeGameId as Hex,
-                        encodedBoard,
+                        encoded.board,
+                        encoded.move,
                         moveCount
                     ).catch((error) => {
                         console.error("Error in move transaction:", error);
@@ -293,13 +320,28 @@ export default function Game2048() {
         addRandomTile(newBoardState);
 
         setPlayedMovesCount(1);
-        setActiveGameId(keccak256(toHex(Math.random().toString())));
-        setEncodedMoves([tilesToBigInt(newBoardState.tiles, 0)]);
+        setActiveGameId(randomIDForAddress(user?.wallet?.address!));
+        setEncodedMoves([tilesToEncodedMove(newBoardState.tiles, 0)]);
 
         setBoardState(newBoardState);
         setGameError(false);
         setGameOver(false);
     };
+
+    function randomIDForAddress(address: string): Hex {
+        if (!isAddress(address)) {
+            throw new Error("Invalid Ethereum address");
+        }
+
+        const addressBytes = toBytes(address); // 20 bytes (160 bits)
+        const randomBytes = crypto.getRandomValues(new Uint8Array(12)); // 12 bytes (96 bits)
+        const fullBytes = new Uint8Array(32); // 32 bytes total
+
+        fullBytes.set(addressBytes, 0); // Set address at start
+        fullBytes.set(randomBytes, 20); // Set random bits after
+
+        return toHex(fullBytes);
+    }
 
     // Add a random tile to the board (2 with 90% chance, 4 with 10% chance)
     const addRandomTile = (boardState: BoardState) => {
@@ -492,23 +534,25 @@ export default function Game2048() {
         return true;
     };
 
-    function tilesToBigInt(tiles: Tile[], direction: Direction): bigint {
-        // Create a 16-element array initialized to 0
+    function tilesToEncodedMove(
+        tiles: Tile[],
+        direction: Direction
+    ): EncodedMove {
         const boardArray: number[] = new Array(16).fill(0);
 
-        // Map tile positions to the board array
         tiles.forEach((tile) => {
-            const index = tile.row * 4 + tile.col; // Convert (row, col) to linear index
+            const index = tile.row * 4 + tile.col;
             boardArray[index] = Math.log2(tile.value);
         });
 
-        let result = BigInt(direction) << BigInt(248); // Shift direction to the most significant 8 bits
-
+        let board = BigInt(0);
         for (let i = 0; i < 16; i++) {
-            result |= BigInt(boardArray[i]) << BigInt((15 - i) * 8); // Place board values in the least significant 128 bits
+            board |= BigInt(boardArray[i]) << BigInt((15 - i) * 8);
         }
 
-        return result;
+        const move = direction;
+
+        return { board, move };
     }
 
     // Get the traversal order based on the direction
