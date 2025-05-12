@@ -8,6 +8,7 @@ import Board from "./components/Board";
 import Container from "./components/Container";
 import Scorecard from "./components/Scorecard";
 import LoginButton from "./components/LoginButton";
+import { Toaster } from "@/components/ui/sonner";
 
 // Utils
 import {
@@ -695,6 +696,22 @@ export default function Game2048() {
         );
     };
 
+    // Display
+
+    const [isLaptopOrLess, setIsLaptopOrLess] = useState(false);
+
+    useEffect(() => {
+        const mediaQuery = window.matchMedia("(max-width: 1024px)");
+        const handleResize = () => setIsLaptopOrLess(mediaQuery.matches);
+
+        // Set initial value
+        handleResize();
+
+        // Listen for changes
+        mediaQuery.addEventListener("change", handleResize);
+        return () => mediaQuery.removeEventListener("change", handleResize);
+    }, []);
+
     return (
         <Container>
             <div className="flex flex-col flex-1">
@@ -722,6 +739,13 @@ export default function Game2048() {
                     setIsOpen={setFaucetModalOpen}
                 />
             </div>
+
+            <Toaster
+                visibleToasts={isLaptopOrLess ? 1 : 3}
+                position={isLaptopOrLess ? "top-center" : "bottom-right"}
+                richColors
+                expand={true}
+            />
         </Container>
     );
 }
