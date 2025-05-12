@@ -167,11 +167,6 @@ export default function Board({
                 )}
             </div>
 
-            <div className="mt-2 text-center text-sm text-gray-600 leading-tight md:mt-6">
-                <p className="mb-1">Use arrow keys to move the tiles.</p>
-                <p>Join the numbers and get to the 2048 tile!</p>
-            </div>
-
             <style>{`
         @keyframes appear {
             0% { transform: scale(0.5); opacity: 0; }
