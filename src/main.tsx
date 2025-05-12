@@ -4,7 +4,6 @@ import "./index.css";
 
 // UI
 import App from "./App.tsx";
-import { Toaster } from "@/components/ui/sonner";
 import { PrivyProvider } from "@privy-io/react-auth";
 
 // Utils
@@ -28,7 +27,6 @@ createRoot(document.getElementById("root")!).render(
             }}
         >
             <App />
-            <Toaster richColors expand={true} />
         </PrivyProvider>
     </StrictMode>
 );
