@@ -167,8 +167,8 @@ export default function Board({
                 )}
             </div>
 
-            <div className="mt-6 text-center text-gray-600">
-                <p className="mb-2">Use arrow keys to move the tiles.</p>
+            <div className="mt-2 text-center text-sm text-gray-600 leading-tight md:mt-6">
+                <p className="mb-1">Use arrow keys to move the tiles.</p>
                 <p>Join the numbers and get to the 2048 tile!</p>
             </div>
 

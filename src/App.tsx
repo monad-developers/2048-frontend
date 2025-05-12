@@ -697,27 +697,31 @@ export default function Game2048() {
 
     return (
         <Container>
-            <div className="flex items-center justify-between w-full max-w-md mb-4">
-                <Scorecard score={boardState.score} />
-                <LoginButton resetGame={initializeGame} />
+            <div className="flex flex-col flex-1 overflow-hidden">
+                <div className="flex items-center justify-between w-full max-w-md mx-auto mb-2 p-4">
+                    <Scorecard score={boardState.score} />
+                    <LoginButton resetGame={initializeGame} />
+                </div>
+
+                <div className="flex-1 overflow-auto px-2">
+                    <Board
+                        containerRef={gameContainerRef}
+                        tiles={boardState.tiles}
+                        score={boardState.score}
+                        gameOver={gameOver}
+                        gameError={gameError}
+                        gameErrorText={gameErrorText}
+                        resyncGame={resyncGame}
+                        initializeGame={initializeGame}
+                    />
+                </div>
+
+                <FaucetDialog
+                    resyncGame={resyncGame}
+                    isOpen={faucetModalOpen}
+                    setIsOpen={setFaucetModalOpen}
+                />
             </div>
-
-            <Board
-                containerRef={gameContainerRef}
-                tiles={boardState.tiles}
-                score={boardState.score}
-                gameOver={gameOver}
-                gameError={gameError}
-                gameErrorText={gameErrorText}
-                resyncGame={resyncGame}
-                initializeGame={initializeGame}
-            />
-
-            <FaucetDialog
-                resyncGame={resyncGame}
-                isOpen={faucetModalOpen}
-                setIsOpen={setFaucetModalOpen}
-            />
         </Container>
     );
 }
