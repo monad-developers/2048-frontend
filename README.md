@@ -1,5 +1,7 @@
 # Monad 2048
 
+Credits: [2048](https://github.com/gabrielecirulli/2048)
+
 `Monad 2048` is a fully on-chain game implementation of the popular sliding puzzle game 2048. This game connects with a smart contract
 on [Monad testnet](https://testnet.monad.xyz/) and records every game and every move on-chain.
 
