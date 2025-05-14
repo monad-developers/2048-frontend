@@ -9,7 +9,7 @@ import {
     AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import { Button } from "./ui/button";
-import { Copy, ExternalLinkIcon, Loader2 } from "lucide-react";
+import { Copy, ArrowDownLeft, Loader2 } from "lucide-react";
 import { toast } from "sonner";
 import { useEffect, useState } from "react";
 import { usePrivy } from "@privy-io/react-auth";
@@ -102,9 +102,13 @@ export function FaucetDialog({
         setupUser();
     }, [user, isOpen]);
 
+    const abbreviatedAddress = address
+        ? `${address.slice(0, 4)}...${address.slice(-2)}`
+        : "";
+
     const copyToClipboard = async () => {
         if (user?.wallet?.address) {
-            await navigator.clipboard.writeText(user.wallet.address);
+            await navigator.clipboard.writeText(address);
             toast.info("Copied to clipboard.");
         }
     };
@@ -113,23 +117,18 @@ export function FaucetDialog({
 
     return (
         <AlertDialog open={isOpen}>
-            <AlertDialogContent className="bg-yellow-600">
+            <AlertDialogContent className="bg-yellow-600 w-[95vw] max-w-md sm:max-w-lg rounded-lg px-4 py-6 overflow-y-auto max-h-[90vh]">
                 <AlertDialogHeader>
                     <AlertDialogTitle className="text-black">
-                        You need at least 0.1 MON to play a few moves.
+                        You need at least 0.1 MON to play moves.
                     </AlertDialogTitle>
                     <AlertDialogDescription asChild>
-                        <div className="flex flex-col">
-                            {" "}
-                            <div className="flex items-center gap-2">
-                                <div className="text-purple-800">
-                                    {" "}
-                                    {/* Keep inner elements as div */}
-                                    <span className="text-gray-800 font-bold">
-                                        Player
-                                    </span>
-                                    : {address}
-                                </div>
+                        <div className="flex flex-col gap-3 text-sm sm:text-base text-gray-800">
+                            <div className="flex items-center justify-center gap-2 text-purple-800 break-all">
+                                <span className="text-gray-800 font-bold">
+                                    Player
+                                </span>
+                                : {abbreviatedAddress}
                                 <Button
                                     variant="ghost"
                                     size="icon"
@@ -141,18 +140,16 @@ export function FaucetDialog({
                                 </Button>
                             </div>
                             <div className="text-purple-800">
-                                {" "}
                                 <span className="text-gray-800 font-bold">
                                     Balance
                                 </span>
                                 : {formatEther(balance)} MON
                             </div>
-                            <div className="text-gray-800 my-2">
-                                {" "}
+                            <p>
                                 Fund your player address with testnet MON
                                 directly via your external wallet, or get 0.5
                                 MON from the game faucet.
-                            </div>
+                            </p>
                         </div>
                     </AlertDialogDescription>
                 </AlertDialogHeader>
@@ -182,7 +179,7 @@ export function FaucetDialog({
                                     ) : (
                                         <p>Fund via game faucet</p>
                                     )}
-                                    <ExternalLinkIcon />
+                                    <ArrowDownLeft />
                                 </div>
                             )}
                         </Button>
