@@ -9,7 +9,7 @@ import {
     AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import { Button } from "./ui/button";
-import { Copy, ExternalLinkIcon, Loader2 } from "lucide-react";
+import { Copy, ArrowDownLeft, Loader2 } from "lucide-react";
 import { toast } from "sonner";
 import { useEffect, useState } from "react";
 import { usePrivy } from "@privy-io/react-auth";
@@ -181,7 +181,7 @@ export function FaucetDialog({
                                     ) : (
                                         <p>Fund via game faucet</p>
                                     )}
-                                    <ExternalLinkIcon />
+                                    <ArrowDownLeft />
                                 </div>
                             )}
                         </Button>
