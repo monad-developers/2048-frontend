@@ -102,15 +102,13 @@ export function FaucetDialog({
         setupUser();
     }, [user, isOpen]);
 
-    const abbreviatedAddress = user?.wallet?.address
-        ? `${user.wallet.address.slice(0, 4)}...${user.wallet.address.slice(
-              -2
-          )}`
+    const abbreviatedAddress = address
+        ? `${address.slice(0, 4)}...${address.slice(-2)}`
         : "";
 
     const copyToClipboard = async () => {
         if (user?.wallet?.address) {
-            await navigator.clipboard.writeText(user.wallet.address);
+            await navigator.clipboard.writeText(address);
             toast.info("Copied to clipboard.");
         }
     };
