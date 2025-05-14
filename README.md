@@ -1,4 +1,6 @@
-# Monad 2048
+# Monad 2048 Frontend
+
+**Check out a full writeup of how we built this [here](https://blog.monad.xyz/blog/build-2048).**
 
 Credits: [2048](https://github.com/gabrielecirulli/2048)
 
