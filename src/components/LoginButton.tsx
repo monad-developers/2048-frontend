@@ -32,7 +32,6 @@ export default function LoginButton({ resetGame }: LoginButtonProps) {
     };
 
     const [address, setAddress] = useState("");
-
     useEffect(() => {
         if (!user) {
             setAddress("");
@@ -48,8 +47,6 @@ export default function LoginButton({ resetGame }: LoginButtonProps) {
             setAddress("");
             return;
         }
-
-        console.log("User: ", privyUser);
 
         setAddress((privyUser as any).address);
     }, [user]);

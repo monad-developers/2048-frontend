@@ -348,6 +348,26 @@ export default function Game2048() {
     //                      Initialize new game                     //
     // =============================================================//
 
+    const [address, setAddress] = useState("");
+    useEffect(() => {
+        if (!user) {
+            setAddress("");
+            return;
+        }
+
+        const [privyUser] = user.linkedAccounts.filter(
+            (account) =>
+                account.type === "wallet" &&
+                account.walletClientType === "privy"
+        );
+        if (!privyUser || !(privyUser as any).address) {
+            setAddress("");
+            return;
+        }
+
+        setAddress((privyUser as any).address);
+    }, [user]);
+
     // Initialize the game with two random tiles
     const initializeGame = () => {
         setResetBoards([]);
@@ -362,7 +382,7 @@ export default function Game2048() {
         addRandomTile(newBoardState);
 
         setPlayedMovesCount(1);
-        setActiveGameId(randomIDForAddress(user?.wallet?.address!));
+        setActiveGameId(randomIDForAddress(address));
         setEncodedMoves([tilesToEncodedMove(newBoardState.tiles, 0)]);
 
         setBoardState(newBoardState);

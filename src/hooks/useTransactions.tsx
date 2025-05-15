@@ -26,6 +26,7 @@ export function useTransactions() {
     // Fetch user nonce on new login.
     const userNonce = useRef(0);
     const userBalance = useRef(0n);
+    const userAddress = useRef("");
 
     // Resets nonce and balance
     async function resetNonceAndBalance() {
@@ -54,6 +55,7 @@ export function useTransactions() {
 
         userNonce.current = nonce;
         userBalance.current = balance;
+        userAddress.current = privyUserAddress;
     }
 
     useEffect(() => {
@@ -108,11 +110,15 @@ export function useTransactions() {
             if (!provider) {
                 throw Error("Wallet not found.");
             }
+            const privyUserAddress = userAddress.current;
+            if (!privyUserAddress) {
+                throw Error("Privy user not found.");
+            }
 
             const startTime = Date.now();
             const signedTransaction = await provider.signTransaction({
                 to: GAME_CONTRACT_ADDRESS,
-                account: user?.wallet?.address,
+                account: privyUserAddress,
                 data,
                 nonce,
                 gas,

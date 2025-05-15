@@ -128,7 +128,7 @@ export function FaucetDialog({
         : "";
 
     const copyToClipboard = async () => {
-        if (user?.wallet?.address) {
+        if (address) {
             await navigator.clipboard.writeText(address);
             toast.info("Copied to clipboard.");
         }
