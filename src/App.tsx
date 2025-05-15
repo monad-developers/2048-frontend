@@ -365,8 +365,6 @@ export default function Game2048() {
             return;
         }
 
-        console.log("User: ", privyUser);
-
         setAddress((privyUser as any).address);
     }, [user]);
 

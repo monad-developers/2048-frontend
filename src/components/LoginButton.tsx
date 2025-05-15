@@ -48,8 +48,6 @@ export default function LoginButton({ resetGame }: LoginButtonProps) {
             return;
         }
 
-        console.log("User: ", privyUser);
-
         setAddress((privyUser as any).address);
     }, [user]);
 
