@@ -61,7 +61,9 @@ export function FaucetDialog({
     }
 
     const handleClose = async () => {
+        setLoading(true);
         await resyncGame();
+        setLoading(false);
         setIsOpen(false);
     };
 
@@ -104,9 +106,10 @@ export function FaucetDialog({
 
             await setupUser();
         } catch (e) {
+            console.log((e as any).message);
             console.log("Error fetching testnet MON: ", e);
-            toast.error(`Failed to send transaction.`, {
-                description: `Error: ${(e as Error).message}`,
+            toast.error(`Please try again or fund wallet directly.`, {
+                description: `Error: failed to get funds from faucet.`,
             });
         }
 
@@ -140,16 +143,16 @@ export function FaucetDialog({
         <AlertDialog open={isOpen}>
             <AlertDialogContent className="bg-yellow-600 w-[95vw] max-w-md sm:max-w-lg rounded-lg px-4 py-6 overflow-y-auto max-h-[90vh]">
                 <AlertDialogHeader>
-                    <AlertDialogTitle className="text-black">
-                        You need at least 0.1 MON to play moves.
+                    <AlertDialogTitle className="text-black text-center">
+                        You need ~0.1 MON more to play moves.
                     </AlertDialogTitle>
                     <AlertDialogDescription asChild>
                         <div className="flex flex-col gap-3 text-sm sm:text-base text-gray-800">
                             <div className="flex items-center justify-center gap-2 text-purple-800 break-all">
-                                <span className="text-gray-800 font-bold">
-                                    Player
+                                <span className="text-gray-800">
+                                    {`Player: ${abbreviatedAddress}`}
                                 </span>
-                                : {abbreviatedAddress}
+
                                 <Button
                                     variant="ghost"
                                     size="icon"
@@ -160,11 +163,9 @@ export function FaucetDialog({
                                     <Copy className="h-4 w-4" />
                                 </Button>
                             </div>
-                            <div className="text-purple-800">
-                                <span className="text-gray-800 font-bold">
-                                    Balance
-                                </span>
-                                : {formatEther(balance)} MON
+                            <div className="text-purple-800 flex items-center justify-center">
+                                <span className="text-gray-800">Balance</span>:{" "}
+                                {formatEther(balance)} MON
                             </div>
                             <p>
                                 Fund your player address with testnet MON
@@ -180,7 +181,10 @@ export function FaucetDialog({
                         onClick={handleClose}
                         className="bg-blue-500 text-white hover:bg-blue-600"
                     >
-                        Resume
+                        {loading && (
+                            <Loader2 className="w-5 h-5 animate-spin mr-2" />
+                        )}
+                        {!loading ? "Resume" : "Re-sycing..."}
                     </AlertDialogCancel>
                     <AlertDialogAction asChild>
                         <Button
