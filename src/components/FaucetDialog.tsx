@@ -31,7 +31,8 @@ export function FaucetDialog({
 
     const [address, setAddress] = useState("");
     const [balance, setBalance] = useState(0n);
-    const [loading, setLoading] = useState(false);
+    const [resumeLoading, setResumeLoading] = useState(false);
+    const [faucetLoading, setFaucetLoading] = useState(false);
 
     async function setupUser() {
         if (!user) {
@@ -61,9 +62,9 @@ export function FaucetDialog({
     }
 
     const handleClose = async () => {
-        setLoading(true);
+        setResumeLoading(true);
         await resyncGame();
-        setLoading(false);
+        setResumeLoading(false);
         setIsOpen(false);
     };
 
@@ -89,7 +90,7 @@ export function FaucetDialog({
             return;
         }
 
-        setLoading(true);
+        setFaucetLoading(true);
 
         try {
             const response = await post({
@@ -113,7 +114,7 @@ export function FaucetDialog({
             });
         }
 
-        setLoading(false);
+        setFaucetLoading(false);
     };
 
     useEffect(() => {
@@ -181,21 +182,21 @@ export function FaucetDialog({
                         onClick={handleClose}
                         className="bg-blue-500 text-white hover:bg-blue-600"
                     >
-                        {loading && (
+                        {resumeLoading && (
                             <Loader2 className="w-5 h-5 animate-spin mr-2" />
                         )}
-                        {!loading ? "Resume" : "Re-sycing..."}
+                        {!resumeLoading ? "Resume" : "Re-sycing..."}
                     </AlertDialogCancel>
                     <AlertDialogAction asChild>
                         <Button
                             className="outline outline-white bg-purple-600 text-white hover:bg-purple-700"
                             onClick={handleFaucetRequest}
-                            disabled={loading || alreadyFunded}
+                            disabled={faucetLoading || alreadyFunded}
                         >
-                            {loading ? (
+                            {faucetLoading ? (
                                 <Loader2 className="w-5 h-5 animate-spin mr-2" />
                             ) : null}
-                            {loading ? (
+                            {faucetLoading ? (
                                 "Funding..."
                             ) : (
                                 <div className="flex gap-2">
