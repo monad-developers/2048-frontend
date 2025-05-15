@@ -1,5 +1,5 @@
 // Hooks
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useLogin, useLogout, usePrivy } from "@privy-io/react-auth";
 
 // UI
@@ -31,17 +31,38 @@ export default function LoginButton({ resetGame }: LoginButtonProps) {
         }
     };
 
+    const [address, setAddress] = useState("");
+
+    useEffect(() => {
+        if (!user) {
+            setAddress("");
+            return;
+        }
+
+        const [privyUser] = user.linkedAccounts.filter(
+            (account) =>
+                account.type === "wallet" &&
+                account.walletClientType === "privy"
+        );
+        if (!privyUser || !(privyUser as any).address) {
+            setAddress("");
+            return;
+        }
+
+        console.log("User: ", privyUser);
+
+        setAddress((privyUser as any).address);
+    }, [user]);
+
     const copyToClipboard = async () => {
-        if (user?.wallet?.address) {
-            await navigator.clipboard.writeText(user.wallet.address);
+        if (address) {
+            await navigator.clipboard.writeText(address);
             toast.info("Copied to clipboard.");
         }
     };
 
-    const abbreviatedAddress = user?.wallet?.address
-        ? `${user.wallet.address.slice(0, 4)}...${user.wallet.address.slice(
-              -2
-          )}`
+    const abbreviatedAddress = address
+        ? `${address.slice(0, 4)}...${address.slice(-2)}`
         : "";
 
     return (

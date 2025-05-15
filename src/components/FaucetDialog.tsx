@@ -35,18 +35,28 @@ export function FaucetDialog({
 
     async function setupUser() {
         if (!user) {
+            setAddress("");
+            setBalance(0n);
             return;
         }
 
-        if (!user.wallet) {
+        const [privyUser] = user.linkedAccounts.filter(
+            (account) =>
+                account.type === "wallet" &&
+                account.walletClientType === "privy"
+        );
+        if (!privyUser || !(privyUser as any).address) {
+            setAddress("");
+            setBalance(0n);
             return;
         }
+        const privyUserAddress = (privyUser as any).address;
 
         const bal = await publicClient.getBalance({
-            address: user.wallet.address as Hex,
+            address: privyUserAddress as Hex,
         });
 
-        setAddress(user.wallet.address);
+        setAddress(privyUserAddress);
         setBalance(bal);
     }
 
@@ -56,10 +66,21 @@ export function FaucetDialog({
     };
 
     const handleFaucetRequest = async () => {
-        if (!user || !user.wallet) {
+        if (!user) {
             toast.error("Please log-in.");
             return;
         }
+
+        const [privyUser] = user.linkedAccounts.filter(
+            (account) =>
+                account.type === "wallet" &&
+                account.walletClientType === "privy"
+        );
+        if (!privyUser || !(privyUser as any).address) {
+            toast.error("Embedded wallet not found.");
+            return;
+        }
+        const privyUserAddress = (privyUser as any).address;
 
         if (parseFloat(formatEther(balance)) >= 0.5) {
             toast.error("Balance already more than 0.5 MON.");
@@ -72,7 +93,7 @@ export function FaucetDialog({
             const response = await post({
                 url: import.meta.env.VITE_2048_FAUCET_URL,
                 params: {
-                    address: user.wallet.address,
+                    address: privyUserAddress,
                 },
             });
 
