@@ -29,15 +29,24 @@ export function useTransactions() {
 
     // Resets nonce and balance
     async function resetNonceAndBalance() {
-        if (!user || !user.wallet) {
+        if (!user) {
             return;
         }
+        const [privyUser] = user.linkedAccounts.filter(
+            (account) =>
+                account.type === "wallet" &&
+                account.walletClientType === "privy"
+        );
+        if (!privyUser || !(privyUser as any).address) {
+            return;
+        }
+        const privyUserAddress = (privyUser as any).address;
 
         const nonce = await publicClient.getTransactionCount({
-            address: user.wallet.address as Hex,
+            address: privyUserAddress as Hex,
         });
         const balance = await publicClient.getBalance({
-            address: user.wallet.address as Hex,
+            address: privyUserAddress as Hex,
         });
 
         console.log("Setting nonce: ", nonce);

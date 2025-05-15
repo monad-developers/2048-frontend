@@ -20,9 +20,9 @@ createRoot(document.getElementById("root")!).render(
                 },
                 defaultChain: monadTestnet,
                 supportedChains: [monadTestnet],
-                loginMethods: ["google", "passkey"],
+                loginMethods: ["google", "passkey", "wallet"],
                 embeddedWallets: {
-                    ethereum: { createOnLogin: "users-without-wallets" },
+                    ethereum: { createOnLogin: "all-users" },
                 },
             }}
         >
