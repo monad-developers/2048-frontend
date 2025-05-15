@@ -106,9 +106,10 @@ export function FaucetDialog({
 
             await setupUser();
         } catch (e) {
+            console.log((e as any).message);
             console.log("Error fetching testnet MON: ", e);
-            toast.error(`Failed to send transaction.`, {
-                description: `Error: ${(e as Error).message}`,
+            toast.error(`Please try again or fund wallet directly.`, {
+                description: `Error: failed to get funds from faucet.`,
             });
         }
 
