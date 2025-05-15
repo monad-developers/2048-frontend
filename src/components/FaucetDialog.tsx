@@ -61,7 +61,9 @@ export function FaucetDialog({
     }
 
     const handleClose = async () => {
+        setLoading(true);
         await resyncGame();
+        setLoading(false);
         setIsOpen(false);
     };
 
@@ -137,7 +139,7 @@ export function FaucetDialog({
     const alreadyFunded = parseFloat(formatEther(balance)) >= 0.5;
 
     return (
-        <AlertDialog open={true}>
+        <AlertDialog open={isOpen}>
             <AlertDialogContent className="bg-yellow-600 w-[95vw] max-w-md sm:max-w-lg rounded-lg px-4 py-6 overflow-y-auto max-h-[90vh]">
                 <AlertDialogHeader>
                     <AlertDialogTitle className="text-black text-center">
@@ -178,7 +180,10 @@ export function FaucetDialog({
                         onClick={handleClose}
                         className="bg-blue-500 text-white hover:bg-blue-600"
                     >
-                        Resume
+                        {loading && (
+                            <Loader2 className="w-5 h-5 animate-spin mr-2" />
+                        )}
+                        {!loading ? "Resume" : "Re-sycing..."}
                     </AlertDialogCancel>
                     <AlertDialogAction asChild>
                         <Button
