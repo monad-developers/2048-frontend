@@ -146,7 +146,7 @@ export function useTransactions() {
 
             // Fire toast info with benchmark and transaction hash.
             console.log(`Transaction sent in ${time} ms: ${response.result}`);
-            toast.success(`Sent transaction.`, {
+            toast.info(`Sent transaction.`, {
                 description: `${successText} Time: ${time} ms`,
                 action: (
                     <Button
