@@ -1,3 +1,5 @@
+[![License](https://img.shields.io/github/license/monad-developers/2048-frontend)](https://github.com/monad-developers/2048-frontend/blob/main/LICENSE)
+
 # Monad 2048 Frontend
 
 **Check out a full writeup of how we built this [here](https://blog.monad.xyz/blog/build-2048).**
