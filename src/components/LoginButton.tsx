@@ -135,7 +135,7 @@ export default function LoginButton({ resetGame }: LoginButtonProps) {
                     />
                     <Button
                         variant="ghost"
-                        className="underline"
+                        className="underline mt-1"
                         onClick={logout}
                     >
                         Logout
