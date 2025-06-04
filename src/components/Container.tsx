@@ -22,7 +22,7 @@ export default function Container({ children }: ContainerProps) {
                 <Alert className="bg-purple-600 text-white border-purple-700 rounded-xl shadow-[0_8px_0_rgb(107,33,168)]">
                     <InfoIcon className="text-white" />
                     <AlertTitle>
-                        2048 Faucet Ended
+                        2048 Faucet Has Ended
                     </AlertTitle>
                     <AlertDescription className="mt-1">
                         <p className="!leading-[1.4]">
