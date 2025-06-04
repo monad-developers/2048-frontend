@@ -8,14 +8,13 @@ import {
     AlertDialogHeader,
     AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
-import { Button } from "./ui/button";
-import { Copy, ArrowDownLeft, Loader2, ArrowUpRight } from "lucide-react";
-import { toast } from "sonner";
-import { useEffect, useState } from "react";
-import { usePrivy } from "@privy-io/react-auth";
 import { publicClient } from "@/utils/client";
+import { usePrivy } from "@privy-io/react-auth";
+import { ArrowUpRight, Copy, Loader2 } from "lucide-react";
+import { useEffect, useState } from "react";
+import { toast } from "sonner";
 import { formatEther, Hex } from "viem";
-import { post } from "@/utils/fetch";
+import { Button } from "./ui/button";
 
 export type FaucetDialogProps = {
     isOpen: boolean;
