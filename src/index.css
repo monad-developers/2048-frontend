@@ -1,2 +1,12 @@
 @import "tailwindcss";
 @import "tw-animate-css";
+
+@font-face {
+  font-family: "atari_classicchunky";
+  src: url("atari_font.woff2") format("woff2"),
+    url("atari_font.woff") format("woff");
+}
+
+body {
+  font-family: "atari_classicchunky" !important;
+}
