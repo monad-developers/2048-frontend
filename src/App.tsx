@@ -124,7 +124,7 @@ export default function Game2048() {
         if (!container) return;
 
         const handleKeyDown = async (event: KeyboardEvent) => {
-            if (!user || gameOver || isAnimating) return;
+            if (!user || gameOver || isAnimating || faucetModalOpen) return;
 
             switch (event.key) {
                 case "ArrowUp":
@@ -183,7 +183,7 @@ export default function Game2048() {
             container.removeEventListener("touchstart", handleTouchStart);
             container.removeEventListener("touchend", handleTouchEnd);
         };
-    }, [boardState, gameOver, isAnimating]);
+    }, [boardState, gameOver, isAnimating, faucetModalOpen]);
 
     // Move tiles in the specified direction
     const move = async (direction: Direction) => {
