@@ -8,14 +8,13 @@ import {
     AlertDialogHeader,
     AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
-import { Button } from "./ui/button";
-import { Copy, ArrowDownLeft, Loader2 } from "lucide-react";
-import { toast } from "sonner";
-import { useEffect, useState } from "react";
-import { usePrivy } from "@privy-io/react-auth";
 import { publicClient } from "@/utils/client";
+import { usePrivy } from "@privy-io/react-auth";
+import { ArrowUpRight, Copy, Loader2 } from "lucide-react";
+import { useEffect, useState } from "react";
+import { toast } from "sonner";
 import { formatEther, Hex } from "viem";
-import { post } from "@/utils/fetch";
+import { Button } from "./ui/button";
 
 export type FaucetDialogProps = {
     isOpen: boolean;
@@ -32,7 +31,6 @@ export function FaucetDialog({
     const [address, setAddress] = useState("");
     const [balance, setBalance] = useState(0n);
     const [resumeLoading, setResumeLoading] = useState(false);
-    const [faucetLoading, setFaucetLoading] = useState(false);
 
     async function setupUser() {
         if (!user) {
@@ -67,60 +65,6 @@ export function FaucetDialog({
         setResumeLoading(false);
         setIsOpen(false);
     };
-
-    const handleFaucetRequest = async () => {
-        if (!user) {
-            toast.error("Please log-in.");
-            return;
-        }
-
-        const [privyUser] = user.linkedAccounts.filter(
-            (account) =>
-                account.type === "wallet" &&
-                account.walletClientType === "privy"
-        );
-        if (!privyUser || !(privyUser as any).address) {
-            toast.error("Embedded wallet not found.");
-            return;
-        }
-        const privyUserAddress = (privyUser as any).address;
-
-        if (parseFloat(formatEther(balance)) >= 0.5) {
-            toast.error("Balance already more than 0.5 MON.");
-            return;
-        }
-
-        setFaucetLoading(true);
-
-        try {
-            const response = await post({
-                url: import.meta.env.VITE_2048_FAUCET_URL,
-                params: {
-                    address: privyUserAddress,
-                },
-            });
-
-            const transactionHash = response.txHash;
-            console.log("Funded tx: ", transactionHash);
-
-            toast.success(`Player funded!`);
-
-            await setupUser();
-        } catch (e) {
-            console.log((e as any).message);
-            console.log("Error fetching testnet MON: ", e);
-            toast.error(`Please try again or fund wallet directly.`, {
-                description: `Error: failed to get funds from faucet.`,
-            });
-        }
-
-        setFaucetLoading(false);
-    };
-
-    useEffect(() => {
-        if (!isOpen) return;
-        handleFaucetRequest();
-    }, [user, isOpen]);
 
     useEffect(() => {
         if (!isOpen) return;
@@ -168,7 +112,7 @@ export function FaucetDialog({
                                 <span className="text-gray-800">Balance</span>:{" "}
                                 {formatEther(balance)} MON
                             </div>
-                            <p>
+                            <p className="text-center">
                                 Fund your player address with testnet MON
                                 directly via your external wallet, or get 0.5
                                 MON from the game faucet.
@@ -190,24 +134,17 @@ export function FaucetDialog({
                     <AlertDialogAction asChild>
                         <Button
                             className="outline outline-white bg-purple-600 text-white hover:bg-purple-700"
-                            onClick={handleFaucetRequest}
-                            disabled={faucetLoading || alreadyFunded}
+                            disabled={alreadyFunded}
+                            asChild
                         >
-                            {faucetLoading ? (
-                                <Loader2 className="w-5 h-5 animate-spin mr-2" />
-                            ) : null}
-                            {faucetLoading ? (
-                                "Funding..."
-                            ) : (
-                                <div className="flex gap-2">
-                                    {alreadyFunded ? (
-                                        <p>Already funded</p>
-                                    ) : (
-                                        <p>Fund via game faucet</p>
-                                    )}
-                                    <ArrowDownLeft />
-                                </div>
-                            )}
+                            <a
+                                href="https://faucet.monad.xyz"
+                                target="_blank"
+                                className="flex items-center"
+                            >
+                                <p>Fund via faucet</p>
+                                <ArrowUpRight className="w-4 h-4 ml-1" />
+                            </a>
                         </Button>
                     </AlertDialogAction>
                 </AlertDialogFooter>
