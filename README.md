@@ -23,4 +23,4 @@ bun dev
 
 ## Feedback
 
-Please open issues or PRs on this repository for any feedback.
+Please open issues or PRs on this repository for any feedback. Add feedback to the Monad developers' Discrod.
