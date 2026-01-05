@@ -1,4 +1,4 @@
-import { usePrivy } from "@privy-io/react-auth";
+import { usePrivy, type WalletWithMetadata } from "@privy-io/react-auth";
 import { ArrowUpRight, Copy, Loader2, RefreshCw } from "lucide-react";
 import { useEffect, useState } from "react";
 import { toast } from "sonner";
@@ -13,7 +13,7 @@ import {
 	AlertDialogHeader,
 	AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
-import { testnetPublicClient } from "@/utils/client";
+import { useNetwork } from "@/contexts/NetworkContext";
 import { Button } from "./ui/button";
 
 export type FaucetDialogProps = {
@@ -27,6 +27,7 @@ export function FaucetDialog({
 	resyncGame,
 }: FaucetDialogProps) {
 	const { user } = usePrivy();
+	const { publicClient, network } = useNetwork();
 
 	const [address, setAddress] = useState("");
 	const [balance, setBalance] = useState(0n);
@@ -41,17 +42,17 @@ export function FaucetDialog({
 		}
 
 		const [privyUser] = user.linkedAccounts.filter(
-			(account) =>
+			(account): account is WalletWithMetadata =>
 				account.type === "wallet" && account.walletClientType === "privy",
 		);
-		if (!privyUser || !(privyUser as any).address) {
+		if (!privyUser || !privyUser.address) {
 			setAddress("");
 			setBalance(0n);
 			return;
 		}
-		const privyUserAddress = (privyUser as any).address;
+		const privyUserAddress = privyUser.address;
 
-		const bal = await testnetPublicClient.getBalance({
+		const bal = await publicClient.getBalance({
 			address: privyUserAddress as Hex,
 		});
 
@@ -75,7 +76,7 @@ export function FaucetDialog({
 	useEffect(() => {
 		if (!isOpen) return;
 		setupUser();
-	}, [user, isOpen]);
+	}, [user, isOpen, network]);
 
 	const abbreviatedAddress = address
 		? `${address.slice(0, 4)}...${address.slice(-2)}`
@@ -125,7 +126,9 @@ export function FaucetDialog({
 									disabled={refreshingBalance}
 									aria-label="Refresh balance"
 								>
-									<RefreshCw className={`h-4 w-4 ${refreshingBalance ? "animate-spin" : ""}`} />
+									<RefreshCw
+										className={`h-4 w-4 ${refreshingBalance ? "animate-spin" : ""}`}
+									/>
 								</Button>
 							</div>
 							<p className="text-center">

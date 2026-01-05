@@ -1,4 +1,9 @@
-import { useLogin, useLogout, usePrivy } from "@privy-io/react-auth";
+import {
+	useLogin,
+	useLogout,
+	usePrivy,
+	type WalletWithMetadata,
+} from "@privy-io/react-auth";
 import { Copy } from "lucide-react";
 import { useEffect, useState } from "react";
 import { toast } from "sonner";
@@ -52,15 +57,15 @@ export function PlayerInfo() {
 		}
 
 		const [privyUser] = user.linkedAccounts.filter(
-			(account) =>
+			(account): account is WalletWithMetadata =>
 				account.type === "wallet" && account.walletClientType === "privy",
 		);
-		if (!privyUser || !(privyUser as any).address) {
+		if (!privyUser || !privyUser.address) {
 			setAddress("");
 			return;
 		}
 
-		setAddress((privyUser as any).address);
+		setAddress(privyUser.address);
 	}, [user]);
 
 	const copyToClipboard = async () => {

@@ -1,4 +1,4 @@
-import { usePrivy } from "@privy-io/react-auth";
+import { usePrivy, type WalletWithMetadata } from "@privy-io/react-auth";
 import { useEffect, useRef, useState } from "react";
 import {
 	encodePacked,
@@ -353,15 +353,15 @@ export default function Game2048() {
 		}
 
 		const [privyUser] = user.linkedAccounts.filter(
-			(account) =>
+			(account): account is WalletWithMetadata =>
 				account.type === "wallet" && account.walletClientType === "privy",
 		);
-		if (!privyUser || !(privyUser as any).address) {
+		if (!privyUser || !privyUser.address) {
 			setAddress("");
 			return;
 		}
 
-		setAddress((privyUser as any).address);
+		setAddress(privyUser.address);
 	}, [user]);
 
 	// Initialize the game with two random tiles

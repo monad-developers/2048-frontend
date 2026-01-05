@@ -1,4 +1,8 @@
-import { usePrivy, useWallets } from "@privy-io/react-auth";
+import {
+	usePrivy,
+	useWallets,
+	type WalletWithMetadata,
+} from "@privy-io/react-auth";
 import { ExternalLink } from "lucide-react";
 import { useEffect, useRef } from "react";
 import { toast } from "sonner";
@@ -36,13 +40,13 @@ export function useTransactions() {
 			return;
 		}
 		const [privyUser] = user.linkedAccounts.filter(
-			(account) =>
+			(account): account is WalletWithMetadata =>
 				account.type === "wallet" && account.walletClientType === "privy",
 		);
-		if (!privyUser || !(privyUser as any).address) {
+		if (!privyUser || !privyUser.address) {
 			return;
 		}
-		const privyUserAddress = (privyUser as any).address;
+		const privyUserAddress = privyUser.address;
 
 		const nonce = await publicClient.getTransactionCount({
 			address: privyUserAddress as Hex,
