@@ -97,19 +97,23 @@ export default function NetworkToggle({
 				open={pendingNetwork !== null}
 				onOpenChange={(open) => !open && setPendingNetwork(null)}
 			>
-				<AlertDialogContent>
+				<AlertDialogContent className="bg-yellow-600 w-[95vw] max-w-md sm:max-w-lg rounded-lg px-4 py-6 overflow-y-auto max-h-[90vh]">
 					<AlertDialogHeader>
-						<AlertDialogTitle>Switch Network?</AlertDialogTitle>
-						<AlertDialogDescription>
+						<AlertDialogTitle className="text-black text-center">
+							Switch Network?
+						</AlertDialogTitle>
+						<AlertDialogDescription className="text-gray-800 text-center">
 							Switching networks will end your current game. Your progress on
 							this network will not be saved.
 						</AlertDialogDescription>
 					</AlertDialogHeader>
 					<AlertDialogFooter>
-						<AlertDialogCancel>Cancel</AlertDialogCancel>
+						<AlertDialogCancel className="bg-blue-500 text-white border-none hover:bg-blue-600">
+							Cancel
+						</AlertDialogCancel>
 						<AlertDialogAction
 							onClick={confirmSwitch}
-							className="bg-purple-600 hover:bg-purple-700"
+							className="outline outline-white bg-purple-600 text-white hover:bg-purple-700"
 						>
 							Switch to {pendingNetwork === "mainnet" ? "Mainnet" : "Testnet"}
 						</AlertDialogAction>
