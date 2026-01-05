@@ -1,0 +1,15 @@
+packages:
+  - .
+
+minimumReleaseAge: 10080
+
+minimumReleaseAgeExclude:
+  - next
+  - '@next/env'
+
+onlyBuiltDependencies:
+  - '@reown/appkit'
+  - '@swc/core'
+  - bufferutil
+  - esbuild
+  - utf-8-validate
