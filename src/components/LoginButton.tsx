@@ -1,168 +1,101 @@
-// Hooks
-import { useEffect, useState } from "react";
 import { useLogin, useLogout, usePrivy } from "@privy-io/react-auth";
-
-// UI
+import { Copy } from "lucide-react";
+import { useEffect, useState } from "react";
 import { toast } from "sonner";
 import FunPurpleButton from "./FunPurpleButton";
 import { Button } from "./ui/button";
-import { Copy } from "lucide-react";
-import { publicClient } from "@/utils/client";
-import { formatEther, Hex } from "viem";
-import { post } from "@/utils/fetch";
 
 type LoginButtonProps = {
-    resetGame: () => void;
+	resetGame: () => void;
 };
 
 export default function LoginButton({ resetGame }: LoginButtonProps) {
-    const { login } = useLogin();
-    const { logout } = useLogout();
-    const { user, authenticated } = usePrivy();
+	const { login } = useLogin();
+	const { user, authenticated } = usePrivy();
 
-    const [loginLoading, setLoginLoading] = useState(false);
-    const [faucetLoading, setFaucetLoading] = useState(false);
+	const [loginLoading, setLoginLoading] = useState(false);
 
-    const handleLogin = async () => {
-        setLoginLoading(true);
+	const handleLogin = async () => {
+		setLoginLoading(true);
+		try {
+			login();
+			setLoginLoading(false);
+		} catch (err) {
+			console.log("Problem logging in: ", err);
+			setLoginLoading(false);
+		}
+	};
 
-        try {
-            login();
-            setLoginLoading(false);
-        } catch (err) {
-            console.log("Problem logging in: ", err);
-            setLoginLoading(false);
-        }
-    };
+	if (user && authenticated) {
+		return <FunPurpleButton text="New Game" onClick={resetGame} />;
+	}
 
-    const [address, setAddress] = useState("");
-    useEffect(() => {
-        if (!user) {
-            setAddress("");
-            return;
-        }
+	return (
+		<FunPurpleButton
+			text="Login"
+			loadingText="Creating player..."
+			isLoading={loginLoading}
+			onClick={() => handleLogin()}
+		/>
+	);
+}
 
-        const [privyUser] = user.linkedAccounts.filter(
-            (account) =>
-                account.type === "wallet" &&
-                account.walletClientType === "privy"
-        );
-        if (!privyUser || !(privyUser as any).address) {
-            setAddress("");
-            return;
-        }
+export function PlayerInfo() {
+	const { logout } = useLogout();
+	const { user } = usePrivy();
 
-        setAddress((privyUser as any).address);
-    }, [user]);
+	const [address, setAddress] = useState("");
+	useEffect(() => {
+		if (!user) {
+			setAddress("");
+			return;
+		}
 
-    const handleFaucetRequest = async () => {
-        if (!user) {
-            toast.error("Please log-in.");
-            return;
-        }
+		const [privyUser] = user.linkedAccounts.filter(
+			(account) =>
+				account.type === "wallet" && account.walletClientType === "privy",
+		);
+		if (!privyUser || !(privyUser as any).address) {
+			setAddress("");
+			return;
+		}
 
-        const [privyUser] = user.linkedAccounts.filter(
-            (account) =>
-                account.type === "wallet" &&
-                account.walletClientType === "privy"
-        );
-        if (!privyUser || !(privyUser as any).address) {
-            toast.error("Embedded wallet not found.");
-            return;
-        }
-        const privyUserAddress = (privyUser as any).address;
+		setAddress((privyUser as any).address);
+	}, [user]);
 
-        const balance = await publicClient.getBalance({
-            address: privyUserAddress as Hex,
-        });
-        if (parseFloat(formatEther(balance)) >= 0.5) {
-            toast.info("Player has enough MON to play.");
-            return;
-        }
+	const copyToClipboard = async () => {
+		if (address) {
+			await navigator.clipboard.writeText(address);
+			toast.info("Copied to clipboard.");
+		}
+	};
 
-        setFaucetLoading(true);
+	const abbreviatedAddress = address
+		? `${address.slice(0, 4)}...${address.slice(-2)}`
+		: "";
 
-        try {
-            const response = await post({
-                url: import.meta.env.VITE_2048_FAUCET_URL,
-                params: {
-                    address: privyUserAddress,
-                },
-            });
-
-            const transactionHash = response.txHash;
-            console.log("Funded tx: ", transactionHash);
-
-            toast.success(`Player funded!`, {
-                description: `Funded player with 0.5 MON from faucet.`,
-            });
-        } catch (e) {
-            console.log((e as any).message);
-            console.log("Error fetching testnet MON: ", e);
-            toast.info(`You'll need MON to play this game.`, {
-                description: `Continue playing and try the in-game faucet or fund directly.`,
-            });
-        }
-
-        setFaucetLoading(false);
-    };
-
-    // useEffect(() => {
-    //     if (!user) return;
-    //     handleFaucetRequest();
-    // }, [user]);
-
-    const copyToClipboard = async () => {
-        if (address) {
-            await navigator.clipboard.writeText(address);
-            toast.info("Copied to clipboard.");
-        }
-    };
-
-    const abbreviatedAddress = address
-        ? `${address.slice(0, 4)}...${address.slice(-2)}`
-        : "";
-
-    return (
-        <>
-            {user && authenticated ? (
-                <div className="flex flex-col items-center">
-                    <FunPurpleButton
-                        text="New Game"
-                        onClick={resetGame}
-                        loadingText="Funding player..."
-                        isLoading={faucetLoading}
-                    />
-                    <Button
-                        variant="ghost"
-                        className="underline mt-1"
-                        onClick={logout}
-                    >
-                        Logout
-                    </Button>
-                    <div className="flex items-center gap-2">
-                        <p>
-                            <span className="font-bold">Player</span>:{" "}
-                            {abbreviatedAddress}
-                        </p>
-                        <Button
-                            variant="ghost"
-                            size="icon"
-                            className="h-6 w-6 p-1"
-                            onClick={copyToClipboard}
-                        >
-                            <Copy className="h-4 w-4" />
-                        </Button>
-                    </div>
-                </div>
-            ) : (
-                <FunPurpleButton
-                    text="Login"
-                    loadingText="Creating player..."
-                    isLoading={loginLoading}
-                    onClick={handleLogin}
-                />
-            )}
-        </>
-    );
+	return (
+		<div className="flex items-center gap-1 whitespace-nowrap">
+			<span>
+				<span className="font-bold">Player</span>:
+			</span>{" "}
+			{abbreviatedAddress}
+			<Button
+				variant="ghost"
+				size="icon"
+				className="h-6 w-6 p-0.5"
+				onClick={copyToClipboard}
+			>
+				<Copy className="h-3.5 w-3.5" />
+			</Button>
+			<span className="text-gray-400 mx-1">|</span>
+			<Button
+				variant="ghost"
+				className="underline text-sm p-0 h-auto"
+				onClick={logout}
+			>
+				Logout
+			</Button>
+		</div>
+	);
 }

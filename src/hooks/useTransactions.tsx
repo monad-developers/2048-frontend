@@ -11,23 +11,21 @@ import {
 	parseEther,
 } from "viem";
 import { waitForTransactionReceipt } from "viem/actions";
-import { monadTestnet } from "viem/chains";
 import { Button } from "@/components/ui/button";
-import { getEstimatedFees, publicClient } from "@/utils/client";
+import { useNetwork } from "@/contexts/NetworkContext";
+import { getEstimatedFees } from "@/utils/client";
 import { GAME_CONTRACT_ADDRESS } from "@/utils/constants";
 import { post } from "@/utils/fetch";
 
 export function useTransactions() {
-	// User and Wallet objects.
 	const { user } = usePrivy();
 	const { ready, wallets } = useWallets();
+	const { network, chain, publicClient, rpcUrl, explorerUrl } = useNetwork();
 
-	// Fetch user nonce on new login.
 	const userNonce = useRef(0);
 	const userBalance = useRef(0n);
 	const userAddress = useRef("");
 
-	// Resets nonce and balance
 	async function resetNonceAndBalance() {
 		if (!user) {
 			return;
@@ -58,29 +56,30 @@ export function useTransactions() {
 
 	useEffect(() => {
 		resetNonceAndBalance();
-	}, [user]);
+	}, [user, network]);
 
-	// Fetch provider on new login.
 	const walletClient = useRef<any>(null);
 	useEffect(() => {
 		async function getWalletClient() {
 			if (!ready || !wallets) return;
 
-			const userWallet = wallets.find((w) => w.walletClientType == "privy");
+			const userWallet = wallets.find((w) => w.walletClientType === "privy");
 			if (!userWallet) return;
+
+			await userWallet.switchChain(chain.id);
 
 			const ethereumProvider = await userWallet.getEthereumProvider();
 			const provider = createWalletClient({
-				chain: monadTestnet,
+				chain,
 				transport: custom(ethereumProvider),
 			});
 
-			console.log("Setting provider: ", provider);
+			console.log("Setting provider for chain:", chain.id);
 			walletClient.current = provider;
 		}
 
 		getWalletClient();
-	}, [user, ready, wallets]);
+	}, [ready, wallets, chain]);
 
 	// Sends a transaction and wait for receipt.
 	async function sendRawTransactionAndConfirm({
@@ -108,9 +107,12 @@ export function useTransactions() {
 			}
 
 			const startTime = Date.now();
-			const { maxFeePerGas, maxPriorityFeePerGas } = await getEstimatedFees();
+			const { maxFeePerGas, maxPriorityFeePerGas } = await getEstimatedFees(
+				publicClient,
+				network,
+			);
 			const signedTransaction = await provider.signTransaction({
-				to: GAME_CONTRACT_ADDRESS,
+				to: GAME_CONTRACT_ADDRESS[network],
 				account: privyUserAddress,
 				data,
 				nonce,
@@ -119,11 +121,8 @@ export function useTransactions() {
 				maxPriorityFeePerGas,
 			});
 
-			const rpc =
-				import.meta.env.VITE_MONAD_RPC_URL ||
-				monadTestnet.rpcUrls.default.http[0];
 			const response = await post({
-				url: rpc,
+				url: rpcUrl,
 				params: {
 					id: 0,
 					jsonrpc: "2.0",
@@ -149,7 +148,7 @@ export function useTransactions() {
 						className="outline outline-white"
 						onClick={() =>
 							window.open(
-								`https://testnet.monadexplorer.com/tx/${transactionHash}`,
+								`${explorerUrl}/tx/${transactionHash}`,
 								"_blank",
 								"noopener,noreferrer",
 							)
@@ -185,7 +184,7 @@ export function useTransactions() {
 						className="outline outline-white"
 						onClick={() =>
 							window.open(
-								`https://testnet.monadexplorer.com/tx/${transactionHash}`,
+								`${explorerUrl}/tx/${transactionHash}`,
 								"_blank",
 								"noopener,noreferrer",
 							)
@@ -238,7 +237,7 @@ export function useTransactions() {
 		]
 	> {
 		const [latestBoard, nextMoveNumber] = await publicClient.readContract({
-			address: GAME_CONTRACT_ADDRESS,
+			address: GAME_CONTRACT_ADDRESS[network],
 			abi: [
 				{
 					type: "function",
