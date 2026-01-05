@@ -107,10 +107,10 @@ export default function LoginButton({ resetGame }: LoginButtonProps) {
         setFaucetLoading(false);
     };
 
-    useEffect(() => {
-        if (!user) return;
-        handleFaucetRequest();
-    }, [user]);
+    // useEffect(() => {
+    //     if (!user) return;
+    //     handleFaucetRequest();
+    // }, [user]);
 
     const copyToClipboard = async () => {
         if (address) {
