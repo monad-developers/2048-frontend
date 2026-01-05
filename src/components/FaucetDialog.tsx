@@ -1,5 +1,5 @@
 import { usePrivy } from "@privy-io/react-auth";
-import { ArrowUpRight, Copy, Loader2 } from "lucide-react";
+import { ArrowUpRight, Copy, Loader2, RefreshCw } from "lucide-react";
 import { useEffect, useState } from "react";
 import { toast } from "sonner";
 import { formatEther, type Hex } from "viem";
@@ -31,6 +31,7 @@ export function FaucetDialog({
 	const [address, setAddress] = useState("");
 	const [balance, setBalance] = useState(0n);
 	const [resumeLoading, setResumeLoading] = useState(false);
+	const [refreshingBalance, setRefreshingBalance] = useState(false);
 
 	async function setupUser() {
 		if (!user) {
@@ -63,6 +64,12 @@ export function FaucetDialog({
 		await resyncGame();
 		setResumeLoading(false);
 		setIsOpen(false);
+	};
+
+	const handleRefreshBalance = async () => {
+		setRefreshingBalance(true);
+		await setupUser();
+		setRefreshingBalance(false);
 	};
 
 	useEffect(() => {
@@ -107,9 +114,19 @@ export function FaucetDialog({
 									<Copy className="h-4 w-4" />
 								</Button>
 							</div>
-							<div className="text-purple-800 flex items-center justify-center">
+							<div className="text-purple-800 flex items-center justify-center gap-2">
 								<span className="text-gray-800">Balance</span>:{" "}
 								{formatEther(balance)} MON
+								<Button
+									variant="ghost"
+									size="icon"
+									className="h-6 w-6 p-1"
+									onClick={handleRefreshBalance}
+									disabled={refreshingBalance}
+									aria-label="Refresh balance"
+								>
+									<RefreshCw className={`h-4 w-4 ${refreshingBalance ? "animate-spin" : ""}`} />
+								</Button>
 							</div>
 							<p className="text-center">
 								Fund your player address with testnet MON directly via your
