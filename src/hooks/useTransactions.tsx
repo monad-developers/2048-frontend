@@ -3,22 +3,29 @@ import { ExternalLink } from "lucide-react";
 import { useEffect, useRef } from "react";
 import { toast } from "sonner";
 import {
+	type Address,
+	type Chain,
 	createWalletClient,
 	custom,
 	encodeFunctionData,
 	formatEther,
 	type Hex,
 	parseEther,
+	type Transport,
+	type WalletClient,
 } from "viem";
 import { Button } from "@/components/ui/button";
 import { useNetwork } from "@/contexts/NetworkContext";
 import { getEstimatedFees } from "@/utils/client";
 import { GAME_CONTRACT_ADDRESS } from "@/utils/constants";
+import { post } from "@/utils/fetch";
+
+const TRANSACTION_TIMEOUT_MS = 10_000;
 
 export function useTransactions() {
 	const { user } = usePrivy();
 	const { ready, wallets } = useWallets();
-	const { network, chain, publicClient, explorerUrl } = useNetwork();
+	const { network, chain, publicClient, explorerUrl, rpcUrl } = useNetwork();
 
 	const userNonce = useRef(0);
 	const userBalance = useRef(0n);
@@ -56,7 +63,7 @@ export function useTransactions() {
 		resetNonceAndBalance();
 	}, [user, network]);
 
-	const walletClient = useRef<any>(null);
+	const walletClient = useRef<WalletClient<Transport, Chain> | null>(null);
 	useEffect(() => {
 		async function getWalletClient() {
 			if (!ready || !wallets) return;
@@ -109,7 +116,7 @@ export function useTransactions() {
 			);
 			const signedTransaction = await provider.signTransaction({
 				to: GAME_CONTRACT_ADDRESS[network],
-				account: privyUserAddress,
+				account: privyUserAddress as Address,
 				data,
 				nonce,
 				gas,
@@ -117,8 +124,14 @@ export function useTransactions() {
 				maxPriorityFeePerGas,
 			});
 
-			const receipt = await provider.sendRawTransactionSync({
-				serializedTransaction: signedTransaction,
+			const receipt = await post({
+				url: rpcUrl,
+				params: {
+					id: 0,
+					jsonrpc: "2.0",
+					method: "eth_sendRawTransactionSync",
+					params: [signedTransaction, TRANSACTION_TIMEOUT_MS],
+				},
 			});
 			const time = Date.now() - startTime;
 
