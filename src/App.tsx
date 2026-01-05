@@ -10,7 +10,6 @@ import {
 	toHex,
 } from "viem";
 import { Toaster } from "@/components/ui/sonner";
-import { useNetwork } from "@/contexts/NetworkContext";
 import Board from "./components/Board";
 import Container from "./components/Container";
 import { FaucetDialog } from "./components/FaucetDialog";
@@ -49,7 +48,6 @@ export default function Game2048() {
 	// =============================================================//
 
 	const { user } = usePrivy();
-	const { network } = useNetwork();
 
 	const {
 		resetNonceAndBalance,
