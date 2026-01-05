@@ -10,17 +10,15 @@ import {
 	type Hex,
 	parseEther,
 } from "viem";
-import { waitForTransactionReceipt } from "viem/actions";
 import { Button } from "@/components/ui/button";
 import { useNetwork } from "@/contexts/NetworkContext";
 import { getEstimatedFees } from "@/utils/client";
 import { GAME_CONTRACT_ADDRESS } from "@/utils/constants";
-import { post } from "@/utils/fetch";
 
 export function useTransactions() {
 	const { user } = usePrivy();
 	const { ready, wallets } = useWallets();
-	const { network, chain, publicClient, rpcUrl, explorerUrl } = useNetwork();
+	const { network, chain, publicClient, explorerUrl } = useNetwork();
 
 	const userNonce = useRef(0);
 	const userBalance = useRef(0n);
@@ -81,7 +79,6 @@ export function useTransactions() {
 		getWalletClient();
 	}, [ready, wallets, chain]);
 
-	// Sends a transaction and wait for receipt.
 	async function sendRawTransactionAndConfirm({
 		successText,
 		gas,
@@ -96,7 +93,6 @@ export function useTransactions() {
 		let e: Error | null = null;
 
 		try {
-			// Sign and send transaction.
 			const provider = walletClient.current;
 			if (!provider) {
 				throw Error("Wallet not found.");
@@ -121,70 +117,30 @@ export function useTransactions() {
 				maxPriorityFeePerGas,
 			});
 
-			const response = await post({
-				url: rpcUrl,
-				params: {
-					id: 0,
-					jsonrpc: "2.0",
-					method: "eth_sendRawTransaction",
-					params: [signedTransaction],
-				},
+			const receipt = await provider.sendRawTransactionSync({
+				serializedTransaction: signedTransaction,
 			});
 			const time = Date.now() - startTime;
 
-			if (response.error) {
-				console.log(`Failed sent in ${time} ms`);
-				throw Error(response.error.message);
+			if (receipt.status === "reverted") {
+				console.log(`Failed confirmation in ${time} ms`);
+				throw Error(
+					`Failed to confirm transaction: ${receipt.transactionHash}`,
+				);
 			}
 
-			const transactionHash: Hex = response.result;
-
-			// Fire toast info with benchmark and transaction hash.
-			console.log(`Transaction sent in ${time} ms: ${response.result}`);
-			toast.info(`Sent transaction.`, {
+			console.log(
+				`Transaction confirmed in ${time} ms: ${receipt.transactionHash}`,
+			);
+			toast.success(`Confirmed transaction.`, {
 				description: `${successText} Time: ${time} ms`,
 				action: (
 					<Button
 						className="outline outline-white"
+						variant="ghost"
 						onClick={() =>
 							window.open(
-								`${explorerUrl}/tx/${transactionHash}`,
-								"_blank",
-								"noopener,noreferrer",
-							)
-						}
-					>
-						<div className="flex items-center gap-1 p-1">
-							<p>View</p>
-							<ExternalLink className="w-4 h-4" />
-						</div>
-					</Button>
-				),
-			});
-
-			// Confirm transaction
-			const receipt = await waitForTransactionReceipt(publicClient, {
-				hash: transactionHash,
-			});
-
-			if (receipt.status == "reverted") {
-				console.log(`Failed confirmation in ${Date.now() - startTime} ms`);
-				throw Error(`Failed to confirm transaction: ${transactionHash}`);
-			}
-
-			console.log(
-				`Transaction confirmed in ${Date.now() - startTime} ms: ${
-					response.result
-				}`,
-			);
-			toast.success(`Confirmed transaction.`, {
-				description: `${successText} Time: ${Date.now() - startTime} ms`,
-				action: (
-					<Button
-						className="outline outline-white"
-						onClick={() =>
-							window.open(
-								`${explorerUrl}/tx/${transactionHash}`,
+								`${explorerUrl}/tx/${receipt.transactionHash}`,
 								"_blank",
 								"noopener,noreferrer",
 							)
@@ -210,7 +166,6 @@ export function useTransactions() {
 		}
 	}
 
-	// Returns a the latest stored baord of a game as an array.
 	async function getLatestGameBoard(
 		gameId: Hex,
 	): Promise<
@@ -271,7 +226,6 @@ export function useTransactions() {
 		return [latestBoard, nextMoveNumber];
 	}
 
-	// Initializes a game. Calls `prepareGame` and `startGame`.
 	async function initializeGameTransaction(
 		gameId: Hex,
 		boards: readonly [bigint, bigint, bigint, bigint],
@@ -282,7 +236,6 @@ export function useTransactions() {
 			throw Error("Signer has insufficient balance.");
 		}
 
-		// Sign and send transaction: start game
 		console.log("Starting game!");
 
 		const nonce = userNonce.current;
@@ -331,7 +284,6 @@ export function useTransactions() {
 		move: number,
 		moveCount: number,
 	): Promise<void> {
-		// Sign and send transaction: play move
 		console.log(`Playing move ${moveCount}!`);
 
 		const balance = userBalance.current;
