@@ -1,5 +1,5 @@
 import { Button } from "@/components/ui/button";
-import { publicClient } from "@/utils/client";
+import { getEstimatedFees, publicClient } from "@/utils/client";
 import { GAME_CONTRACT_ADDRESS } from "@/utils/constants";
 import { post } from "@/utils/fetch";
 import { usePrivy, useWallets } from "@privy-io/react-auth";
@@ -13,7 +13,6 @@ import {
     formatEther,
     Hex,
     parseEther,
-    parseGwei,
 } from "viem";
 import { waitForTransactionReceipt } from "viem/actions";
 import { monadTestnet } from "viem/chains";
@@ -92,15 +91,11 @@ export function useTransactions() {
         gas,
         data,
         nonce,
-        maxFeePerGas = parseGwei("50"),
-        maxPriorityFeePerGas = parseGwei("5"),
     }: {
         successText?: string;
         gas: BigInt;
         data: Hex;
         nonce: number;
-        maxFeePerGas?: BigInt;
-        maxPriorityFeePerGas?: BigInt;
     }) {
         let e: Error | null = null;
 
@@ -116,6 +111,8 @@ export function useTransactions() {
             }
 
             const startTime = Date.now();
+            const { maxFeePerGas, maxPriorityFeePerGas } =
+                await getEstimatedFees();
             const signedTransaction = await provider.signTransaction({
                 to: GAME_CONTRACT_ADDRESS,
                 account: privyUserAddress,
