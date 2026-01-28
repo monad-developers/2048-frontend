@@ -139,15 +139,15 @@ export function useTransactions() {
 			});
 			const time = Date.now() - startTime;
 
-			if (receipt.status === "reverted") {
+			if (receipt.result.status === "reverted") {
 				console.log(`Failed confirmation in ${time} ms`);
 				throw Error(
-					`Failed to confirm transaction: ${receipt.transactionHash}`,
+					`Failed to confirm transaction: ${receipt.result.transactionHash}`,
 				);
 			}
 
 			console.log(
-				`Transaction confirmed in ${time} ms: ${receipt.transactionHash}`,
+				`Transaction confirmed in ${time} ms: ${receipt.result.transactionHash}`,
 			);
 			toast.success(`Confirmed transaction.`, {
 				description: `${successText} Time: ${time} ms`,
@@ -157,7 +157,7 @@ export function useTransactions() {
 						variant="ghost"
 						onClick={() =>
 							window.open(
-								`${explorerUrl}/tx/${receipt.transactionHash}`,
+								`${explorerUrl}/tx/${receipt.result.transactionHash}`,
 								"_blank",
 								"noopener,noreferrer",
 							)
