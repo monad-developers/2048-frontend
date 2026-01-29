@@ -1,4 +1,4 @@
-import { formatEther } from 'viem';
+import { formatEther } from "viem";
 
 /**
  * Format wei to MON with appropriate precision
@@ -7,7 +7,7 @@ export function formatMonBurned(weiString: string): string {
   const mon = Number(formatEther(BigInt(weiString)));
 
   if (mon < 0.0001) {
-    return '< 0.0001 MON';
+    return "< 0.0001 MON";
   } else if (mon < 1) {
     return `${mon.toFixed(4)} MON`;
   } else if (mon < 100) {
@@ -58,7 +58,7 @@ export function formatRelativeTime(timestamp: string): string {
   const hours = Math.floor(diff / 3600000);
   const days = Math.floor(diff / 86400000);
 
-  if (minutes < 1) return 'just now';
+  if (minutes < 1) return "just now";
   if (minutes < 60) return `${minutes}m ago`;
   if (hours < 24) return `${hours}h ago`;
   return `${days}d ago`;
