@@ -27,7 +27,7 @@ export function FaucetDialog({
 	resyncGame,
 }: FaucetDialogProps) {
 	const { user } = usePrivy();
-	const { publicClient, network } = useNetwork();
+	const { publicClient } = useNetwork();
 
 	const [address, setAddress] = useState("");
 	const [balance, setBalance] = useState(0n);
@@ -76,7 +76,7 @@ export function FaucetDialog({
 	useEffect(() => {
 		if (!isOpen) return;
 		setupUser();
-	}, [user, isOpen, network]);
+	}, [user, isOpen]);
 
 	const abbreviatedAddress = address
 		? `${address.slice(0, 4)}...${address.slice(-2)}`
@@ -132,8 +132,8 @@ export function FaucetDialog({
 								</Button>
 							</div>
 							<p className="text-center">
-								Fund your player address with testnet MON directly via your
-								external wallet, or get 0.5 MON from the game faucet.
+								Fund your player address with MON directly via your external
+								wallet.
 							</p>
 						</div>
 					</AlertDialogDescription>
@@ -154,12 +154,12 @@ export function FaucetDialog({
 							asChild
 						>
 							<a
-								href="https://faucet.monad.xyz"
+								href="https://monad.xyz"
 								target="_blank"
 								className="flex items-center"
 								rel="noopener"
 							>
-								<p>Fund via faucet</p>
+								<p>Get MON</p>
 								<ArrowUpRight className="w-4 h-4 ml-1" />
 							</a>
 						</Button>

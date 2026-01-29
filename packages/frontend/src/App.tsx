@@ -14,7 +14,6 @@ import Board from "./components/Board";
 import Container from "./components/Container";
 import { FaucetDialog } from "./components/FaucetDialog";
 import LoginButton, { PlayerInfo } from "./components/LoginButton";
-import NetworkToggle from "./components/NetworkToggle";
 import Scorecard from "./components/Scorecard";
 import { useTransactions } from "./hooks/useTransactions";
 
@@ -77,17 +76,6 @@ export default function Game2048() {
 	const [resetBoards, setResetBoards] = useState<BoardState[]>([]);
 
 	const hasActiveGame = activeGameId !== "0x" && boardState.tiles.length > 0;
-
-	const handleNetworkChange = () => {
-		setActiveGameId("0x");
-		setEncodedMoves([]);
-		setPlayedMovesCount(0);
-		setBoardState({ tiles: [], score: 0 });
-		setResetBoards([]);
-		setGameOver(false);
-		setGameError(false);
-		setGameErrorText("");
-	};
 
 	// =============================================================//
 	//                   Detect and execute moves                   //
@@ -721,15 +709,7 @@ export default function Game2048() {
 					<Scorecard score={boardState.score} />
 					<div className="flex flex-col items-end gap-4">
 						<LoginButton resetGame={initializeGame} />
-						{user && (
-							<>
-								<NetworkToggle
-									hasActiveGame={hasActiveGame}
-									onNetworkChange={handleNetworkChange}
-								/>
-								<PlayerInfo />
-							</>
-						)}
+						{user && <PlayerInfo />}
 					</div>
 				</div>
 

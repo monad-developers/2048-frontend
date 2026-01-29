@@ -29,7 +29,7 @@ const TRANSACTION_TIMEOUT_MS = 10_000;
 export function useTransactions() {
 	const { user } = usePrivy();
 	const { ready, wallets } = useWallets();
-	const { network, chain, publicClient, explorerUrl, rpcUrl } = useNetwork();
+	const { chain, publicClient, explorerUrl, rpcUrl } = useNetwork();
 
 	const userNonce = useRef(0);
 	const userBalance = useRef(0n);
@@ -65,7 +65,7 @@ export function useTransactions() {
 
 	useEffect(() => {
 		resetNonceAndBalance();
-	}, [user, network]);
+	}, [user]);
 
 	const walletClient = useRef<WalletClient<Transport, Chain> | null>(null);
 	useEffect(() => {
@@ -116,10 +116,9 @@ export function useTransactions() {
 			const startTime = Date.now();
 			const { maxFeePerGas, maxPriorityFeePerGas } = await getEstimatedFees(
 				publicClient,
-				network,
 			);
 			const signedTransaction = await provider.signTransaction({
-				to: GAME_CONTRACT_ADDRESS[network],
+				to: GAME_CONTRACT_ADDRESS,
 				account: privyUserAddress as Address,
 				data,
 				nonce,
@@ -209,7 +208,7 @@ export function useTransactions() {
 		]
 	> {
 		const [latestBoard, nextMoveNumber] = await publicClient.readContract({
-			address: GAME_CONTRACT_ADDRESS[network],
+			address: GAME_CONTRACT_ADDRESS,
 			abi: [
 				{
 					type: "function",

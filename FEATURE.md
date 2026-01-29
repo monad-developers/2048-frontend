@@ -521,15 +521,6 @@ networks:
         events:
           - event: NewGame(address indexed player, bytes32 indexed id, uint256 board)
           - event: NewMove(address indexed player, bytes32 indexed id, uint256 move, uint256 result)
-  - id: 10143 # Monad Testnet
-    start_block: 0
-    contracts:
-      - name: Monad2048
-        address: "0xC52d29f79b2552801e95C8Dc7646f59125009904"
-        handler: src/handlers/index.ts
-        events:
-          - event: NewGame(address indexed player, bytes32 indexed id, uint256 board)
-          - event: NewMove(address indexed player, bytes32 indexed id, uint256 move, uint256 result)
 
 # Enable transaction data for gas tracking
 field_selection:
@@ -791,20 +782,19 @@ import { GET_INDEXER_STATUS } from '@/lib/graphql/queries';
 import { IndexerStatus } from '@/lib/graphql/types';
 import { useNetwork } from '@/contexts/NetworkContext';
 
-const CHAIN_IDS = { mainnet: 143, testnet: 10143 };
+const CHAIN_ID = 143; // Monad Mainnet
 
 export function useIndexerStatus() {
-  const { network } = useNetwork();
   const [status, setStatus] = useState<IndexerStatus | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<Error | null>(null);
 
   const fetchStatus = useCallback(async () => {
     try {
-      const client = getGraphQLClient(network);
+      const client = getGraphQLClient();
       const data = await client.request<{ IndexerStatus: IndexerStatus[] }>(
         GET_INDEXER_STATUS,
-        { chainId: CHAIN_IDS[network] }
+        { chainId: CHAIN_ID }
       );
 
       setStatus(data.IndexerStatus[0] || null);
@@ -814,7 +804,7 @@ export function useIndexerStatus() {
     } finally {
       setLoading(false);
     }
-  }, [network]);
+  }, []);
 
   useEffect(() => {
     fetchStatus();
@@ -845,7 +835,6 @@ interface UseLeaderboardOptions {
 
 export function useLeaderboard(options: UseLeaderboardOptions = {}) {
   const { currentPlayerAddress } = options;
-  const { network } = useNetwork();
   const { status: indexerStatus } = useIndexerStatus();
 
   const [entries, setEntries] = useState<LeaderboardEntry[]>([]);
@@ -856,7 +845,7 @@ export function useLeaderboard(options: UseLeaderboardOptions = {}) {
 
   const fetchLeaderboard = useCallback(async () => {
     try {
-      const client = getGraphQLClient(network);
+      const client = getGraphQLClient();
       const data = await client.request<{ Game: LeaderboardEntry[] }>(
         GET_LEADERBOARD,
         { limit: 10 }
@@ -897,14 +886,14 @@ export function useLeaderboard(options: UseLeaderboardOptions = {}) {
       setError(err as Error);
       setState('error');
     }
-  }, [network, currentPlayerAddress, indexerStatus]);
+  }, [currentPlayerAddress, indexerStatus]);
 
-  // Fetch on mount and when network changes
+  // Fetch on mount
   useEffect(() => {
     isFirstFetch.current = true;
     setState('loading');
     fetchLeaderboard();
-  }, [network]);
+  }, []);
 
   // Poll for updates (pause when tab hidden)
   useEffect(() => {
@@ -1249,10 +1238,7 @@ export function Leaderboard({ currentPlayerAddress }: LeaderboardProps) {
 #### Updated `Container.tsx`
 
 ```tsx
-import { Alert, AlertTitle, AlertDescription } from "@/components/ui/alert";
-import { useNetwork } from "@/contexts/NetworkContext";
 import { Leaderboard } from "@/components/Leaderboard";
-import { InfoIcon } from "lucide-react";
 import React from "react";
 
 type ContainerProps = {
@@ -1261,8 +1247,6 @@ type ContainerProps = {
 };
 
 export default function Container({ children, playerAddress }: ContainerProps) {
-  const { network } = useNetwork();
-
   return (
     <div className="min-h-[100dvh] flex flex-col items-center pb-8 pt-6 px-2 bg-gray-100 overflow-x-hidden">
       {/* Header */}
@@ -1274,19 +1258,6 @@ export default function Container({ children, playerAddress }: ContainerProps) {
           on MONAD
         </h3>
       </div>
-
-      {/* Testnet Alert */}
-      {network === "testnet" && (
-        <div className="max-w-md w-full px-4 mt-4 mb-2">
-          <Alert className="bg-purple-600 text-white border-purple-700 rounded-xl shadow-[0_8px_0_rgb(107,33,168)]">
-            <InfoIcon className="text-white" />
-            <AlertTitle>Testnet Mode</AlertTitle>
-            <AlertDescription className="mt-1">
-              Playing on Monad Testnet. Scores are tracked separately.
-            </AlertDescription>
-          </Alert>
-        </div>
-      )}
 
       {/* Main content area: Game + Leaderboard */}
       <div className="flex-1 w-full flex flex-col lg:flex-row lg:justify-center lg:items-start lg:gap-6 xl:gap-8">
@@ -1369,12 +1340,10 @@ ENVIO_API_TOKEN=your_token_here
 VITE_PRIVY_APP_ID=your_privy_app_id
 
 # Local development (Docker Hasura)
-VITE_ENVIO_GRAPHQL_MAINNET=http://localhost:8080/v1/graphql
-VITE_ENVIO_GRAPHQL_TESTNET=http://localhost:8080/v1/graphql
+VITE_ENVIO_GRAPHQL_URL=http://localhost:8080/v1/graphql
 
 # Production (Envio hosted - uncomment when deployed)
-# VITE_ENVIO_GRAPHQL_MAINNET=https://indexer.bigdevenergy.link/xxxxx/v1/graphql
-# VITE_ENVIO_GRAPHQL_TESTNET=https://indexer.bigdevenergy.link/xxxxx/v1/graphql
+# VITE_ENVIO_GRAPHQL_URL=https://indexer.bigdevenergy.link/xxxxx/v1/graphql
 ```
 
 ### 4. Quick Start Commands
@@ -1417,7 +1386,7 @@ pnpm indexer:stop
 
 3. **Test Frontend**: Open http://localhost:5173
    - Leaderboard should show "Syncing" state initially
-   - Play a game on testnet
+   - Play a game
    - Verify new game appears in leaderboard within ~5 seconds
 
 ---
@@ -1549,16 +1518,14 @@ monBurnedInMon = monBurned / 10^18
 
 ---
 
-## Contract Addresses Reference
+## Contract Address Reference
 
 | Network | Chain ID | Contract Address |
 |---------|----------|------------------|
 | Monad Mainnet | 143 | `0x53748668642735CDa45935716525E7DFbC8aAACC` |
-| Monad Testnet | 10143 | `0xC52d29f79b2552801e95C8Dc7646f59125009904` |
 
-## Envio Endpoints Reference
+## Envio Endpoint Reference
 
 | Network | HyperSync URL |
 |---------|---------------|
 | Monad Mainnet | `https://monad.hypersync.xyz` |
-| Monad Testnet | `https://monad-testnet.hypersync.xyz` |
