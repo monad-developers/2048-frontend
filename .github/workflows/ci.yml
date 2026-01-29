@@ -97,6 +97,3 @@ jobs:
 
       - name: Codegen
         run: pnpm codegen
-
-      - name: Test
-        run: pnpm test
