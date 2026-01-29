@@ -705,12 +705,13 @@ export type LeaderboardState =
 #### `lib/utils/format.ts`
 
 ```typescript
+import { formatEther } from 'viem';
+
 /**
  * Format wei to MON with appropriate precision
  */
 export function formatMonBurned(weiString: string): string {
-  const wei = BigInt(weiString);
-  const mon = Number(wei) / 1e18;
+  const mon = Number(formatEther(BigInt(weiString)));
 
   if (mon < 0.0001) {
     return '< 0.0001 MON';

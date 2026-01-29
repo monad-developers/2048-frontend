@@ -39,7 +39,7 @@ lerna-debug.log*
 cache/
 out/
 broadcast/
-lib/
+/packages/contracts/lib/
 
 # OS
 .DS_Store
