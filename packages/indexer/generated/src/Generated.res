@@ -43,7 +43,7 @@ let makeGeneratedConfig = () => {
       let chain = ChainMap.Chain.makeUnsafe(~chainId=143)
       {
         Config.maxReorgDepth: 200,
-        startBlock: 0,
+        startBlock: 50000000,
         id: 143,
         contracts,
         sources: NetworkSources.evm(~chain, ~contracts=[{name: "Monad2048",events: [Types.Monad2048.NewGame.register(), Types.Monad2048.NewMove.register()],abi: Types.Monad2048.abi}], ~hyperSync=Some("https://143.hypersync.xyz"), ~allEventSignatures=[Types.Monad2048.eventSignatures]->Belt.Array.concatMany, ~shouldUseHypersyncClientDecoder=true, ~rpcs=[], ~lowercaseAddresses=false)

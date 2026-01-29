@@ -1,10 +1,9 @@
-import {
-  Monad2048,
-  Game,
-  GameMove,
-  Player,
-  IndexerStatus,
-} from "generated";
+import { Monad2048 } from "../../generated";
+import type {
+  Monad2048_NewGame_event,
+  Monad2048_NewMove_event,
+  handlerContext,
+} from "../../generated";
 
 // ============================================================
 // Board Decoding & Score Calculation
@@ -39,17 +38,11 @@ function getBoardSum(tiles: number[]): number {
 
 /**
  * Calculate score delta from a move by detecting merged tiles.
- *
- * Algorithm:
- * 1. Count tile values in both boards
- * 2. Tiles that decreased in count were merged
- * 3. Score = sum of merged result values (2X for each pair of X)
  */
 function calculateScoreDelta(
   prevTiles: number[],
   newTiles: number[]
 ): number {
-  // Count occurrences of each tile value
   const prevCounts = new Map<number, number>();
   const newCounts = new Map<number, number>();
 
@@ -67,18 +60,13 @@ function calculateScoreDelta(
 
   let scoreDelta = 0;
 
-  // For each tile value, check if count decreased (meaning merges happened)
-  // A merge of two Xs creates one 2X, score += 2X
   for (const [value, prevCount] of prevCounts) {
     const newCount = newCounts.get(value) || 0;
     const newDoubleCount = newCounts.get(value * 2) || 0;
     const prevDoubleCount = prevCounts.get(value * 2) || 0;
 
-    // Number of merges = (prevCount - newCount) / 2
-    // But also check that double value increased
     const doubleIncrease = newDoubleCount - prevDoubleCount;
     if (doubleIncrease > 0 && prevCount > newCount) {
-      // Each merge of two Xs gives score of 2X
       scoreDelta += doubleIncrease * (value * 2);
     }
   }
@@ -90,29 +78,19 @@ function calculateScoreDelta(
 // NewGame Handler
 // ============================================================
 
-Monad2048.NewGame.handler(async ({ event, context }) => {
-  const { player, id: gameId, board } = event.args;
+Monad2048.NewGame.handler(async ({ event, context }: { event: Monad2048_NewGame_event; context: handlerContext }) => {
+  const { player, id: gameId, board } = event.params;
   const txHash = event.transaction.hash;
-  const gasUsed = BigInt(event.transaction.gasUsed || 150000);
-  const gasPrice = BigInt(event.transaction.effectiveGasPrice || event.transaction.gasPrice || 0);
+  const gasUsed = event.transaction.gasUsed ?? 150000n;
+  const gasPrice = event.transaction.effectiveGasPrice ?? event.transaction.gasPrice ?? 0n;
   const monBurned = gasUsed * gasPrice;
 
-  // Decode final board after move 3
   const tiles = decodeBoard(board);
   const highestTile = getHighestTile(tiles);
 
-  // For NewGame, we receive board state after move 3
-  // The contract validates boards[0] -> boards[1] -> boards[2] -> boards[3]
-  // We don't have intermediate boards in the event, so we estimate initial score
-  // Based on board sum: score = boardSum - initialTiles (rough estimate)
-  // For accurate score, we'd need to decode the calldata
-
-  // Simplified: assume minimal merges in first 3 moves
-  // Real implementation would decode transaction input data
   const boardSum = getBoardSum(tiles);
-  const estimatedScore = Math.max(0, boardSum - 4 - 4); // Subtract ~2 initial tiles
+  const estimatedScore = Math.max(0, boardSum - 8);
 
-  // Create Game entity
   context.Game.set({
     id: gameId,
     player: player.toLowerCase(),
@@ -127,13 +105,12 @@ Monad2048.NewGame.handler(async ({ event, context }) => {
     isActive: true,
   });
 
-  // Create initial GameMove entry (represents moves 1-3 batched)
   context.GameMove.set({
     id: txHash,
     gameId: gameId,
     moveNumber: 3,
-    direction: 0, // Unknown for batched moves
-    boardBefore: "0".repeat(32), // Initial board unknown
+    direction: 0,
+    boardBefore: "0".repeat(32),
     boardAfter: encodeBoard(tiles),
     scoreDelta: estimatedScore,
     gasUsed: gasUsed,
@@ -143,7 +120,6 @@ Monad2048.NewGame.handler(async ({ event, context }) => {
     txHash: txHash,
   });
 
-  // Update or create Player
   const existingPlayer = await context.Player.get(player.toLowerCase());
   if (existingPlayer) {
     const isBetter = estimatedScore > existingPlayer.bestScore;
@@ -166,39 +142,34 @@ Monad2048.NewGame.handler(async ({ event, context }) => {
     });
   }
 
-  // Update indexer status
-  await updateIndexerStatus(context, event, true);
+  await updateIndexerStatus(context, event.chainId, event.block.number, event.block.timestamp, true);
 });
 
 // ============================================================
 // NewMove Handler
 // ============================================================
 
-Monad2048.NewMove.handler(async ({ event, context }) => {
-  const { player, id: gameId, move, result } = event.args;
+Monad2048.NewMove.handler(async ({ event, context }: { event: Monad2048_NewMove_event; context: handlerContext }) => {
+  const { player, id: gameId, move, result } = event.params;
   const txHash = event.transaction.hash;
-  const gasUsed = BigInt(event.transaction.gasUsed || 100000);
-  const gasPrice = BigInt(event.transaction.effectiveGasPrice || event.transaction.gasPrice || 0);
+  const gasUsed = event.transaction.gasUsed ?? 100000n;
+  const gasPrice = event.transaction.effectiveGasPrice ?? event.transaction.gasPrice ?? 0n;
   const monBurned = gasUsed * gasPrice;
 
-  // Get existing game
   const game = await context.Game.get(gameId);
   if (!game) {
     console.warn(`NewMove for unknown game: ${gameId}`);
     return;
   }
 
-  // Decode boards
   const prevTiles = decodeBoard(BigInt("0x" + game.latestBoard));
   const newTiles = decodeBoard(result);
 
-  // Calculate score delta from this move
   const scoreDelta = calculateScoreDelta(prevTiles, newTiles);
   const newScore = game.score + scoreDelta;
   const highestTile = getHighestTile(newTiles);
   const newMoveCount = game.moveCount + 1;
 
-  // Update Game entity
   context.Game.set({
     ...game,
     score: newScore,
@@ -210,7 +181,6 @@ Monad2048.NewMove.handler(async ({ event, context }) => {
     lastMoveAt: BigInt(event.block.timestamp),
   });
 
-  // Create GameMove entry
   context.GameMove.set({
     id: txHash,
     gameId: gameId,
@@ -226,7 +196,6 @@ Monad2048.NewMove.handler(async ({ event, context }) => {
     txHash: txHash,
   });
 
-  // Update Player stats
   const existingPlayer = await context.Player.get(player.toLowerCase());
   if (existingPlayer) {
     const isBetter = newScore > existingPlayer.bestScore;
@@ -239,16 +208,20 @@ Monad2048.NewMove.handler(async ({ event, context }) => {
     });
   }
 
-  // Update indexer status
-  await updateIndexerStatus(context, event, false);
+  await updateIndexerStatus(context, event.chainId, event.block.number, event.block.timestamp, false);
 });
 
 // ============================================================
 // Indexer Status Helper
 // ============================================================
 
-async function updateIndexerStatus(context: any, event: any, isNewGame: boolean) {
-  const chainId = event.chainId;
+async function updateIndexerStatus(
+  context: handlerContext,
+  chainId: number,
+  blockNumber: number,
+  timestamp: number,
+  isNewGame: boolean
+) {
   const statusId = `status-${chainId}`;
 
   const existing = await context.IndexerStatus.get(statusId);
@@ -257,9 +230,9 @@ async function updateIndexerStatus(context: any, event: any, isNewGame: boolean)
   context.IndexerStatus.set({
     id: statusId,
     chainId: chainId,
-    lastIndexedBlock: BigInt(event.block.number),
-    lastIndexedTimestamp: BigInt(event.block.timestamp),
+    lastIndexedBlock: BigInt(blockNumber),
+    lastIndexedTimestamp: BigInt(timestamp),
     totalGamesIndexed: totalGames + (isNewGame ? 1 : 0),
-    isBackfilling: false, // Will be true during initial sync
+    isBackfilling: false,
   });
 }

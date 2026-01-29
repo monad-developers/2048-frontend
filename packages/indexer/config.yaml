@@ -2,7 +2,7 @@ name: monad-2048-leaderboard
 description: Indexes Monad 2048 game events for leaderboard with score and gas tracking
 networks:
   - id: 143 # Monad Mainnet
-    start_block: 0 # Or contract deployment block for faster sync
+    start_block: 50000000 # Recent block for faster initial sync
     contracts:
       - name: Monad2048
         address: "0x53748668642735CDa45935716525E7DFbC8aAACC"
