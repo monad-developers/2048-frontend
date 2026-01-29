@@ -76,6 +76,7 @@ export function FaucetDialog({
 	useEffect(() => {
 		if (!isOpen) return;
 		setupUser();
+		// eslint-disable-next-line react-hooks/exhaustive-deps
 	}, [user, isOpen]);
 
 	const abbreviatedAddress = address

@@ -70,6 +70,7 @@ export function useLeaderboard(options: UseLeaderboardOptions = {}) {
     isFirstFetch.current = true;
     setState('loading');
     fetchLeaderboard();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   // Poll for updates (pause when tab hidden)

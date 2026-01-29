@@ -20,7 +20,7 @@ export async function get({ url, params, headers }: GetOptions) {
 
 type PostOptions = {
     url: string;
-    params?: Record<string, unknown> | any[];
+    params?: Record<string, unknown> | unknown[];
     headers?: Record<string, string>;
 };
 

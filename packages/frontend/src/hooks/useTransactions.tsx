@@ -65,6 +65,7 @@ export function useTransactions() {
 
 	useEffect(() => {
 		resetNonceAndBalance();
+		// eslint-disable-next-line react-hooks/exhaustive-deps
 	}, [user]);
 
 	const walletClient = useRef<WalletClient<Transport, Chain> | null>(null);

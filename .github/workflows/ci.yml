@@ -24,7 +24,7 @@ jobs:
       - name: Setup pnpm
         uses: pnpm/action-setup@v4
         with:
-          version: 8
+          version: 10
 
       - name: Setup Node.js
         uses: actions/setup-node@v4
@@ -51,38 +51,21 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v4
-        with:
-          submodules: recursive
 
       - name: Install Foundry
         uses: foundry-rs/foundry-toolchain@v1
 
-      - name: Setup pnpm
-        uses: pnpm/action-setup@v4
-        with:
-          version: 8
-
-      - name: Setup Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version: '18'
-          cache: 'pnpm'
-
-      - name: Install dependencies
-        run: pnpm install --frozen-lockfile
-        working-directory: .
-
       - name: Install Forge dependencies
-        run: forge install
+        run: forge install foundry-rs/forge-std@3b20d60d14b343ee4f908cb8079495c07f5e8981 Vectorized/solady@c9e079c0ca836dcc52777a1fa7227ef28e3537b3 --no-commit
 
       - name: Lint (Format Check)
-        run: pnpm lint
+        run: forge fmt --check
 
       - name: Build
-        run: pnpm build
+        run: forge build
 
       - name: Test
-        run: pnpm test
+        run: forge test -vvv
 
   indexer:
     name: Indexer
@@ -97,7 +80,7 @@ jobs:
       - name: Setup pnpm
         uses: pnpm/action-setup@v4
         with:
-          version: 8
+          version: 10
 
       - name: Setup Node.js
         uses: actions/setup-node@v4

@@ -10,7 +10,7 @@ type Tile = {
 };
 
 type BoardProps = {
-    containerRef: any;
+    containerRef: React.RefObject<HTMLDivElement | null>;
     score: number;
     tiles: Tile[];
     gameOver: boolean;

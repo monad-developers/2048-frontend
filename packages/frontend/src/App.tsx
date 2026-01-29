@@ -178,6 +178,7 @@ export default function Game2048() {
 			container.removeEventListener("touchstart", handleTouchStart);
 			container.removeEventListener("touchend", handleTouchEnd);
 		};
+	// eslint-disable-next-line react-hooks/exhaustive-deps
 	}, [boardState, gameOver, isAnimating, faucetModalOpen]);
 
 	// Move tiles in the specified direction
