@@ -16,7 +16,7 @@ createRoot(document.getElementById("root")!).render(
 					theme: "light",
 					walletChainType: "ethereum-only",
 				},
-				defaultChain: monadTestnet,
+				defaultChain: monad,
 				supportedChains: [monadTestnet, monad],
 				loginMethods: ["google", "passkey", "wallet"],
 				embeddedWallets: {

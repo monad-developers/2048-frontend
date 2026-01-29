@@ -24,12 +24,12 @@ const NetworkContext = createContext<NetworkContextType | null>(null);
 function getNetworkFromUrl(): Network {
 	const params = new URLSearchParams(window.location.search);
 	const network = params.get("network");
-	return network === "mainnet" ? "mainnet" : "testnet";
+	return network === "testnet" ? "testnet" : "mainnet";
 }
 
 function updateUrlParam(network: Network) {
 	const url = new URL(window.location.href);
-	if (network === "testnet") {
+	if (network === "mainnet") {
 		url.searchParams.delete("network");
 	} else {
 		url.searchParams.set("network", network);

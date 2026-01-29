@@ -1,4 +1,5 @@
 import { Alert, AlertTitle, AlertDescription } from "@/components/ui/alert";
+import { useNetwork } from "@/contexts/NetworkContext";
 import { InfoIcon } from "lucide-react";
 import React from "react";
 
@@ -7,6 +8,8 @@ type ContainerProps = {
 };
 
 export default function Container({ children }: ContainerProps) {
+    const { network } = useNetwork();
+
     return (
         <div className="min-h-[100dvh] flex flex-col items-center pb-16 pt-6 justify-between px-2 bg-gray-100 overflow-hidden">
             <div className="pt-4 text-center">
@@ -18,32 +21,34 @@ export default function Container({ children }: ContainerProps) {
                 </h3>
             </div>
 
-            <div className="max-w-md w-full px-4 mt-4 mb-2">
-                <Alert className="bg-purple-600 text-white border-purple-700 rounded-xl shadow-[0_8px_0_rgb(107,33,168)]">
-                    <InfoIcon className="text-white" />
-                    <AlertTitle>
-                        2048 Faucet Has Ended
-                    </AlertTitle>
-                    <AlertDescription className="mt-1">
-                        <p className="!leading-[1.4]">
-                            <span>
-                                The 2048 game will no longer be funding player addresses at this time. Please claim more tokens at{" "}
-                            </span>
-                            <a
-                                href="https://faucet.monad.xyz"
-                                target="_blank"
-                                rel="noopener noreferrer"
-                                className="underline hover:text-yellow-300"
-                                >
-                                faucet.monad.xyz
-                            </a>{" "}
-                            <span>
-                                and deposit to your player address here.
-                            </span>
-                        </p>
-                    </AlertDescription>
-                </Alert>
-            </div>
+            {network === "testnet" && (
+                <div className="max-w-md w-full px-4 mt-4 mb-2">
+                    <Alert className="bg-purple-600 text-white border-purple-700 rounded-xl shadow-[0_8px_0_rgb(107,33,168)]">
+                        <InfoIcon className="text-white" />
+                        <AlertTitle>
+                            2048 Faucet Has Ended
+                        </AlertTitle>
+                        <AlertDescription className="mt-1">
+                            <p className="!leading-[1.4]">
+                                <span>
+                                    The 2048 game will no longer be funding player addresses at this time. Please claim more tokens at{" "}
+                                </span>
+                                <a
+                                    href="https://faucet.monad.xyz"
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                    className="underline hover:text-yellow-300"
+                                    >
+                                    faucet.monad.xyz
+                                </a>{" "}
+                                <span>
+                                    and deposit to your player address here.
+                                </span>
+                            </p>
+                        </AlertDescription>
+                    </Alert>
+                </div>
+            )}
 
             {/* Main content area */}
             <div className="flex-1 w-full max-w-md flex flex-col justify-between overflow-hidden">
