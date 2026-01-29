@@ -1,43 +1,25 @@
 {
-	"name": "my-app",
-	"private": true,
-	"version": "0.0.0",
-	"type": "module",
-	"scripts": {
-		"dev": "vite",
-		"build": "tsc -b && vite build",
-		"lint": "eslint .",
-		"preview": "vite preview"
-	},
-	"dependencies": {
-		"@privy-io/react-auth": "^2.8.2",
-		"@radix-ui/react-alert-dialog": "^1.1.11",
-		"@radix-ui/react-slot": "^1.2.0",
-		"@tailwindcss/vite": "^4.0.17",
-		"@types/node": "^22.13.14",
-		"class-variance-authority": "^0.7.1",
-		"clsx": "^2.1.1",
-		"lucide-react": "^0.484.0",
-		"next-themes": "^0.4.6",
-		"react": "^19.0.0",
-		"react-dom": "^19.0.0",
-		"sonner": "^2.0.3",
-		"tailwind-merge": "^3.0.2",
-		"tailwindcss": "^4.0.17",
-		"tw-animate-css": "^1.2.4",
-		"viem": "2.43.0"
-	},
-	"devDependencies": {
-		"@eslint/js": "^9.21.0",
-		"@types/react": "^19.0.10",
-		"@types/react-dom": "^19.0.4",
-		"@vitejs/plugin-react-swc": "^3.8.0",
-		"eslint": "^9.21.0",
-		"eslint-plugin-react-hooks": "^5.1.0",
-		"eslint-plugin-react-refresh": "^0.4.19",
-		"globals": "^15.15.0",
-		"typescript": "~5.7.2",
-		"typescript-eslint": "^8.24.1",
-		"vite": "^6.2.0"
-	}
+  "name": "2048-monorepo",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "pnpm --filter frontend dev",
+    "dev:frontend": "pnpm --filter frontend dev",
+    "build": "pnpm -r build",
+    "build:frontend": "pnpm --filter frontend build",
+    "build:contracts": "pnpm --filter contracts build",
+    "test": "pnpm -r test",
+    "test:frontend": "pnpm --filter frontend test",
+    "test:contracts": "pnpm --filter contracts test",
+    "lint": "pnpm -r lint",
+    "lint:frontend": "pnpm --filter frontend lint",
+    "lint:contracts": "pnpm --filter contracts lint",
+    "preview": "pnpm --filter frontend preview",
+    "contracts:deploy": "pnpm --filter contracts deploy"
+  },
+  "engines": {
+    "node": ">=18",
+    "pnpm": ">=8"
+  }
 }
