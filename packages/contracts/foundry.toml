@@ -1,0 +1,14 @@
+[profile.default]
+src = "src"
+out = "out"
+libs = ["lib"]
+solc_version = "0.8.28"
+optimizer = true
+optimizer_runs = 2000000
+via_ir = true
+evm_version = "paris"
+
+[fmt]
+line_length = 120
+tab_width = 4
+bracket_spacing = false
