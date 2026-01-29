@@ -45,9 +45,18 @@ export default function LoginButton({ resetGame }: LoginButtonProps) {
 	);
 }
 
-export function PlayerInfo() {
+type PlayerInfoProps = {
+	onLogout: () => void;
+};
+
+export function PlayerInfo({ onLogout }: PlayerInfoProps) {
 	const { logout } = useLogout();
 	const { user } = usePrivy();
+
+	const handleLogout = () => {
+		onLogout();
+		logout();
+	};
 
 	const [address, setAddress] = useState("");
 	useEffect(() => {
@@ -97,7 +106,7 @@ export function PlayerInfo() {
 			<Button
 				variant="ghost"
 				className="underline text-sm p-0 h-auto"
-				onClick={logout}
+				onClick={handleLogout}
 			>
 				Logout
 			</Button>

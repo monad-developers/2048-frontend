@@ -372,6 +372,18 @@ export default function Game2048() {
 		setGameOver(false);
 	};
 
+	// Clear game state on logout
+	const clearGameState = () => {
+		setBoardState({ tiles: [], score: 0 });
+		setActiveGameId("0x");
+		setEncodedMoves([]);
+		setPlayedMovesCount(0);
+		setResetBoards([]);
+		setGameOver(false);
+		setGameError(false);
+		setGameErrorText("");
+	};
+
 	function randomIDForAddress(address: string): Hex {
 		if (!isAddress(address)) {
 			throw new Error("Invalid Ethereum address");
@@ -707,7 +719,7 @@ export default function Game2048() {
 					<Scorecard score={boardState.score} />
 					<div className="flex flex-col items-end gap-4">
 						<LoginButton resetGame={initializeGame} />
-						{user && <PlayerInfo />}
+						{user && <PlayerInfo onLogout={clearGameState} />}
 					</div>
 				</div>
 
