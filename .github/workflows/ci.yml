@@ -56,7 +56,7 @@ jobs:
         uses: foundry-rs/foundry-toolchain@v1
 
       - name: Install Forge dependencies
-        run: forge install foundry-rs/forge-std@3b20d60d14b343ee4f908cb8079495c07f5e8981 Vectorized/solady@c9e079c0ca836dcc52777a1fa7227ef28e3537b3 --no-commit
+        run: forge install foundry-rs/forge-std@3b20d60d14b343ee4f908cb8079495c07f5e8981 Vectorized/solady@c9e079c0ca836dcc52777a1fa7227ef28e3537b3 --no-git
 
       - name: Lint (Format Check)
         run: forge fmt --check
