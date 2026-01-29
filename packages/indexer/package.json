@@ -1,0 +1,21 @@
+{
+  "name": "indexer",
+  "version": "1.0.0",
+  "description": "Envio HyperIndex indexer for Monad 2048 leaderboard",
+  "scripts": {
+    "dev": "envio dev",
+    "start": "envio start",
+    "stop": "envio stop",
+    "codegen": "envio codegen",
+    "test": "mocha"
+  },
+  "dependencies": {
+    "envio": "^2.8.0"
+  },
+  "devDependencies": {
+    "@types/node": "^20.x",
+    "typescript": "^5.x",
+    "mocha": "^10.x",
+    "@types/mocha": "^10.x"
+  }
+}

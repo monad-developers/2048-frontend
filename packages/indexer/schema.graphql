@@ -1,0 +1,56 @@
+# Tracks each move in a game (for score calculation)
+type GameMove @entity {
+  id: ID!                      # txHash
+  gameId: String! @index       # Reference to Game
+  moveNumber: Int!             # 1, 2, 3, 4, 5...
+  direction: Int!              # 0=UP, 1=DOWN, 2=LEFT, 3=RIGHT
+  boardBefore: String!         # Board state before move (hex)
+  boardAfter: String!          # Board state after move (hex)
+  scoreDelta: Int!             # Score gained from this move
+  gasUsed: BigInt!             # Gas consumed
+  gasPrice: BigInt!            # Effective gas price (wei)
+  monBurned: BigInt!           # gasUsed * gasPrice (wei)
+  timestamp: BigInt!           # Block timestamp
+  txHash: String!              # Transaction hash
+}
+
+# Aggregated game data
+type Game @entity {
+  id: ID!                      # gameId (bytes32)
+  player: String! @index       # Player address (indexed for queries)
+  score: Int!                  # Actual game score (sum of merges)
+  highestTile: Int!            # Highest tile value achieved
+  moveCount: Int!              # Total moves played
+  latestBoard: String!         # Current board state (hex)
+
+  # Gas tracking
+  totalGasUsed: BigInt!        # Sum of all gas used
+  totalMonBurned: BigInt!      # Sum of all MON burned (wei)
+
+  # Timestamps
+  startedAt: BigInt!           # Block timestamp of NewGame
+  lastMoveAt: BigInt!          # Block timestamp of last move
+
+  # Status
+  isActive: Boolean!           # True if game still has valid moves
+}
+
+# Player aggregate stats (optional, for profile features)
+type Player @entity {
+  id: ID!                      # Player address
+  totalGamesPlayed: Int!       # Count of games
+  totalMovesPlayed: Int!       # Sum of all moves
+  totalMonBurned: BigInt!      # Total MON spent on games
+  bestScore: Int!              # Highest score achieved
+  bestGameId: String           # Reference to best game
+}
+
+# Indexer status for frontend state management
+type IndexerStatus @entity {
+  id: ID!                      # "status" (singleton)
+  chainId: Int!                # Network chain ID
+  lastIndexedBlock: BigInt!    # Most recent block processed
+  lastIndexedTimestamp: BigInt!# Timestamp of last block
+  totalGamesIndexed: Int!      # Count of games in database
+  isBackfilling: Boolean!      # True if still catching up
+}

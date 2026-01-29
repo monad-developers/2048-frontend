@@ -4,11 +4,16 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "dev": "pnpm --filter frontend dev",
+    "dev": "pnpm run --parallel dev:frontend dev:indexer",
     "dev:frontend": "pnpm --filter frontend dev",
-    "build": "pnpm -r build",
+    "dev:indexer": "pnpm --filter indexer dev",
+    "build": "pnpm run --parallel build:frontend build:indexer",
     "build:frontend": "pnpm --filter frontend build",
     "build:contracts": "pnpm --filter contracts build",
+    "build:indexer": "pnpm --filter indexer codegen",
+    "indexer:start": "pnpm --filter indexer dev",
+    "indexer:stop": "pnpm --filter indexer stop",
+    "indexer:codegen": "pnpm --filter indexer codegen",
     "test": "pnpm -r test",
     "test:frontend": "pnpm --filter frontend test",
     "test:contracts": "pnpm --filter contracts test",
@@ -16,7 +21,10 @@
     "lint:frontend": "pnpm --filter frontend lint",
     "lint:contracts": "pnpm --filter contracts lint",
     "preview": "pnpm --filter frontend preview",
-    "contracts:deploy": "pnpm --filter contracts deploy"
+    "contracts:deploy": "pnpm --filter contracts deploy",
+    "clean": "pnpm run --parallel clean:frontend clean:indexer",
+    "clean:frontend": "pnpm --filter frontend clean",
+    "clean:indexer": "pnpm --filter indexer stop"
   },
   "engines": {
     "node": ">=18",

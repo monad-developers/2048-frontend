@@ -75,8 +75,6 @@ export default function Game2048() {
 	});
 	const [resetBoards, setResetBoards] = useState<BoardState[]>([]);
 
-	const hasActiveGame = activeGameId !== "0x" && boardState.tiles.length > 0;
-
 	// =============================================================//
 	//                   Detect and execute moves                   //
 	// =============================================================//
@@ -703,7 +701,7 @@ export default function Game2048() {
 	}, []);
 
 	return (
-		<Container>
+		<Container playerAddress={address}>
 			<div className="flex flex-col flex-1">
 				<div className="flex items-start justify-between w-full max-w-md mx-auto p-4">
 					<Scorecard score={boardState.score} />

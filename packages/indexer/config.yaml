@@ -1,0 +1,21 @@
+name: monad-2048-leaderboard
+description: Indexes Monad 2048 game events for leaderboard with score and gas tracking
+networks:
+  - id: 143 # Monad Mainnet
+    start_block: 0 # Or contract deployment block for faster sync
+    contracts:
+      - name: Monad2048
+        address: "0x53748668642735CDa45935716525E7DFbC8aAACC"
+        handler: src/handlers/index.ts
+        events:
+          - event: NewGame(address indexed player, bytes32 indexed id, uint256 board)
+          - event: NewMove(address indexed player, bytes32 indexed id, uint256 move, uint256 result)
+
+# Enable transaction data for gas tracking
+field_selection:
+  transaction_fields:
+    - hash
+    - from
+    - gasUsed
+    - effectiveGasPrice
+    - gasPrice
