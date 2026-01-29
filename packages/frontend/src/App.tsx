@@ -241,8 +241,10 @@ export default function Game2048() {
 								// Add the merged tile
 								newBoardState.tiles.push(mergedTile);
 
-								// Update the score
+								// Only count score once the game has started on-chain (after move 3)
+							if (currentMove > 3) {
 								newBoardState.score += mergedTile.value;
+							}
 
 								moved = true;
 							}
@@ -716,7 +718,7 @@ export default function Game2048() {
 		<Container playerAddress={address}>
 			<div className="flex flex-col flex-1">
 				<div className="flex items-start justify-between w-full max-w-md mx-auto p-4">
-					<Scorecard score={boardState.score} />
+					<Scorecard score={boardState.score} isGameStarted={playedMovesCount > 3} />
 					<div className="flex flex-col items-end gap-4">
 						<LoginButton resetGame={initializeGame} />
 						{user && <PlayerInfo onLogout={clearGameState} />}

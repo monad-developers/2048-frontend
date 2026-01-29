@@ -32,17 +32,24 @@ function getHighestTile(tiles: number[]): number {
   return Math.max(...tiles, 0);
 }
 
-function getBoardSum(tiles: number[]): number {
-  return tiles.reduce((a, b) => a + b, 0);
-}
-
 /**
  * Calculate score delta from a move by detecting merged tiles.
+ *
+ * Algorithm: Work from largest to smallest tile values. Any tile value
+ * that appears MORE times after the move (excluding the spawned tile)
+ * must be a merge result. Each merge of value V consumed 2 tiles of V/2.
  */
 function calculateScoreDelta(
   prevTiles: number[],
   newTiles: number[]
 ): number {
+  // Calculate the spawned tile value from board sum difference
+  // Merges don't change board sum (v + v = 2v), only spawns do
+  const prevSum = prevTiles.reduce((a, b) => a + b, 0);
+  const newSum = newTiles.reduce((a, b) => a + b, 0);
+  const spawnedValue = newSum - prevSum;
+
+  // Count tiles at each value
   const prevCounts = new Map<number, number>();
   const newCounts = new Map<number, number>();
 
@@ -58,16 +65,37 @@ function calculateScoreDelta(
     }
   }
 
+  // Remove the spawned tile from consideration
+  if (spawnedValue > 0 && newCounts.has(spawnedValue)) {
+    const count = newCounts.get(spawnedValue)!;
+    if (count === 1) {
+      newCounts.delete(spawnedValue);
+    } else {
+      newCounts.set(spawnedValue, count - 1);
+    }
+  }
+
+  // Work from largest to smallest tile values
+  // New tiles that appear must be merge results
+  const allValues = new Set([...prevCounts.keys(), ...newCounts.keys()]);
+  const sortedValues = Array.from(allValues).sort((a, b) => b - a);
+
   let scoreDelta = 0;
 
-  for (const [value, prevCount] of prevCounts) {
+  for (const value of sortedValues) {
+    const prevCount = prevCounts.get(value) || 0;
     const newCount = newCounts.get(value) || 0;
-    const newDoubleCount = newCounts.get(value * 2) || 0;
-    const prevDoubleCount = prevCounts.get(value * 2) || 0;
 
-    const doubleIncrease = newDoubleCount - prevDoubleCount;
-    if (doubleIncrease > 0 && prevCount > newCount) {
-      scoreDelta += doubleIncrease * (value * 2);
+    if (newCount > prevCount) {
+      // These are merge results
+      const mergeResults = newCount - prevCount;
+      scoreDelta += mergeResults * value;
+
+      // Update prevCounts to account for consumed tiles
+      const halfValue = value / 2;
+      if (halfValue >= 2 && prevCounts.has(halfValue)) {
+        prevCounts.set(halfValue, prevCounts.get(halfValue)! - mergeResults * 2);
+      }
     }
   }
 
@@ -88,13 +116,13 @@ Monad2048.NewGame.handler(async ({ event, context }: { event: Monad2048_NewGame_
   const tiles = decodeBoard(board);
   const highestTile = getHighestTile(tiles);
 
-  const boardSum = getBoardSum(tiles);
-  const estimatedScore = Math.max(0, boardSum - 8);
+  // Score starts at 0 - the first 3 moves are not counted to match frontend behavior
+  const initialScore = 0;
 
   context.Game.set({
     id: gameId,
     player: player.toLowerCase(),
-    score: estimatedScore,
+    score: initialScore,
     highestTile,
     moveCount: 3,
     latestBoard: encodeBoard(tiles),
@@ -112,7 +140,7 @@ Monad2048.NewGame.handler(async ({ event, context }: { event: Monad2048_NewGame_
     direction: 0,
     boardBefore: "0".repeat(32),
     boardAfter: encodeBoard(tiles),
-    scoreDelta: estimatedScore,
+    scoreDelta: initialScore,
     gasUsed: gasUsed,
     gasPrice: gasPrice,
     monBurned: monBurned,
@@ -122,13 +150,13 @@ Monad2048.NewGame.handler(async ({ event, context }: { event: Monad2048_NewGame_
 
   const existingPlayer = await context.Player.get(player.toLowerCase());
   if (existingPlayer) {
-    const isBetter = estimatedScore > existingPlayer.bestScore;
+    const isBetter = initialScore > existingPlayer.bestScore;
     context.Player.set({
       ...existingPlayer,
       totalGamesPlayed: existingPlayer.totalGamesPlayed + 1,
       totalMovesPlayed: existingPlayer.totalMovesPlayed + 3,
       totalMonBurned: existingPlayer.totalMonBurned + monBurned,
-      bestScore: isBetter ? estimatedScore : existingPlayer.bestScore,
+      bestScore: isBetter ? initialScore : existingPlayer.bestScore,
       bestGameId: isBetter ? gameId : existingPlayer.bestGameId,
     });
   } else {
@@ -137,7 +165,7 @@ Monad2048.NewGame.handler(async ({ event, context }: { event: Monad2048_NewGame_
       totalGamesPlayed: 1,
       totalMovesPlayed: 3,
       totalMonBurned: monBurned,
-      bestScore: estimatedScore,
+      bestScore: initialScore,
       bestGameId: gameId,
     });
   }
