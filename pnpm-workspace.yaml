@@ -4,8 +4,8 @@ packages:
 minimumReleaseAge: 10080
 
 minimumReleaseAgeExclude:
-  - next
-  - '@next/env'
+  - react
+  - react-dom
 
 onlyBuiltDependencies:
   - '@reown/appkit'
